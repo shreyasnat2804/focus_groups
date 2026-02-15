@@ -41,6 +41,12 @@ Six-phase pipeline, each phase feeding the next:
 - If something breaks, use `git revert` — don't force-push or rewrite history
 - Switch to feature branches later when experimenting (different models, prompting strategies)
 
+## Testing
+
+- After every code change, create or update a corresponding test file in the `testers/` directory
+- Test files should be named `test_<module>.py` (e.g., `testers/test_database.py`)
+- Tests should be runnable with `python3 -m pytest testers/`
+
 ## Development Notes
 
 - Demographic extraction (age/gender/income from bios/posts) uses an NLP classifier — this is the noisiest component

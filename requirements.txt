@@ -1,0 +1,6 @@
+praw
+transformers
+torch
+pandas
+matplotlib
+python-dotenv
