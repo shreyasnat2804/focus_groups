@@ -2,10 +2,6 @@
 
 AI-powered synthetic focus group platform. Uses demographic-conditioned sector models (tech, financial, political) to simulate focus group responses.
 
-## Current Stage: 1 — Data Pipeline
-
-Building the scraping + demographic tagging + storage pipeline.
-
 ## Skill Files
 
 Detailed reference docs live in `.claude/skills/`. Load the relevant one for context:
@@ -60,6 +56,3 @@ Reddit (PRAW) → Postgres (raw posts)
 - Tests in `tests/` directory, named `test_<module>.py`
 - Run with `python3 -m pytest tests/`
 
-## Next Task
-
-Set up local Postgres with pgvector via Docker, then build the scraper.
