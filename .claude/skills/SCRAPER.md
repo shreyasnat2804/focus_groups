@@ -1,103 +1,354 @@
-# SCRAPER.md — Reddit Data Collection via PRAW
+# SCRAPER Skill
 
-## PRAW Setup
+This skill covers Reddit data collection using public JSON endpoints.
+
+---
+
+## Critical Context: Reddit API Changes (November 2025)
+
+Reddit eliminated self-service API access in November 2025. New OAuth credentials require manual approval through the Responsible Builder Policy, with very low approval rates for commercial/personal projects.
+
+**Our approach:** Use Reddit's public JSON endpoints instead
+- No credentials required
+- Read-only access to all public content
+- Rate limited to ~10 requests/minute
+- 100% legal and compliant with Reddit's ToS for public data
+
+**DO NOT use PRAW or attempt OAuth flow unless you have pre-existing credentials**
+
+---
+
+## Reddit JSON Endpoint Patterns
+
+### Base URL Format
+Append `.json` to any Reddit URL to get structured data:
+
+```
+Subreddit posts:
+https://www.reddit.com/r/{subreddit}/{sort}.json?limit=100&after={pagination_token}
+
+Sort options: hot, new, top, rising
+Time filters (for top): hour, day, week, month, year, all
+
+Specific post + comments:
+https://www.reddit.com/r/{subreddit}/comments/{post_id}.json
+
+User profile:
+https://www.reddit.com/user/{username}.json
+```
+
+### Example Response Structure
+```json
+{
+  "kind": "Listing",
+  "data": {
+    "after": "t3_abc123",
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "id": "abc123",
+          "title": "Post title",
+          "selftext": "Post body text",
+          "author": "username",
+          "subreddit": "personalfinance",
+          "created_utc": 1234567890,
+          "score": 42,
+          "num_comments": 15,
+          "permalink": "/r/personalfinance/comments/abc123/..."
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Rate Limiting (CRITICAL)
+
+**Hard limit:** ~10 requests per minute for unauthenticated access
+**Strategy:** 6-7 second delay between requests minimum
 
 ```python
-import praw
+import time
+import random
 
-reddit = praw.Reddit(
-    client_id=os.getenv("REDDIT_CLIENT_ID"),
-    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-    user_agent="focusgroup-research/0.1 by /u/YOUR_USERNAME",
-)
+def rate_limited_get(url, session):
+    """Fetch with rate limiting"""
+    response = session.get(url)
+    
+    # Handle rate limit errors
+    if response.status_code == 429:
+        retry_after = int(response.headers.get('Retry-After', 60))
+        print(f"Rate limited. Waiting {retry_after}s")
+        time.sleep(retry_after)
+        return rate_limited_get(url, session)
+    
+    # Add random delay to stay under limit
+    delay = random.uniform(6, 8)
+    time.sleep(delay)
+    
+    return response
 ```
 
-Store credentials in `.env` (never committed):
+**Important:** Reddit tracks by IP. If scraping from data center IPs (Lambda, GCP), you may face stricter limits or blocks. Consider:
+- Running from residential IP initially
+- Adding realistic user-agent headers
+- Randomizing request timing
+- Not hammering single subreddit repeatedly
+
+---
+
+## Scraper Architecture
+
+### Phase 1: Local Development (Stage 0)
 ```
-REDDIT_CLIENT_ID=...
-REDDIT_CLIENT_SECRET=...
+Python script on laptop
+├── requests library for HTTP
+├── SQLite for local testing
+└── CSV export for analysis
 ```
 
-## Rate Limits
+### Phase 2: Production (Stage 1)
+```
+Lambda CPU instance (continuous)
+├── Python 3.11
+├── psycopg2 for Postgres writes
+├── Cloud SQL connection
+└── Systemd service or cron for scheduling
+```
 
-- **OAuth API**: 60 requests/minute (1 per second sustained)
-- PRAW handles rate limiting internally but log when it throttles
-- Each `.submissions()` call fetches up to 100 posts (one API call)
-- Each `.comments()` call on a submission is 1 API call
-- **Budget**: ~3,600 posts/hour from listing endpoints, more from Pushshift-style archives
+---
 
-## Subreddit Targets by Sector
+## Target Subreddits by Sector
 
-### Tech
-| Subreddit | Demographic Signal | Size |
-|-----------|-------------------|------|
-| r/technology | General tech consumers | 15M+ |
-| r/gadgets | Product-focused consumers | 20M+ |
-| r/apple, r/android | Platform-specific opinions | 5M+ each |
-| r/programming | Developer perspective | 5M+ |
-| r/sysadmin | Enterprise IT | 800k |
+### Financial Sector
+```python
+FINANCIAL_SUBREDDITS = [
+    'personalfinance',      # General advice, middle income
+    'povertyfinance',       # Low income focused
+    'financialindependence',# FIRE movement, high income
+    'fatFIRE',             # Very high income ($5M+ net worth)
+    'Frugal',              # Budget-conscious
+    'investing',           # Stock market discussion
+    'wallstreetbets',      # Risk-tolerant traders
+    'Bogleheads',          # Conservative investors
+]
+```
 
-### Financial
-| Subreddit | Demographic Signal | Size |
-|-----------|-------------------|------|
-| r/personalfinance | Broad income distribution | 18M+ |
-| r/povertyfinance | Lower income | 1.5M |
-| r/fatFIRE | High income | 500k |
-| r/investing | Active investors | 2M+ |
-| r/CreditCards | Consumer credit users | 300k |
+### Tech Sector
+```python
+TECH_SUBREDDITS = [
+    'technology',          # General tech news
+    'apple',              # Apple products
+    'Android',            # Android ecosystem
+    'gadgets',            # Consumer electronics
+    'buildapc',           # PC building, budget-conscious
+    'programming',        # Software developers
+    'cscareerquestions',  # Tech workers
+    'homelab',            # Tech enthusiasts
+]
+```
 
-### Political
-| Subreddit | Demographic Signal | Size |
-|-----------|-------------------|------|
-| r/politics | Left-leaning general | 8M+ |
-| r/conservative | Right-leaning | 1M+ |
-| r/moderatepolitics | Centrist | 400k |
-| r/neoliberal | Center-left policy | 200k |
-| r/libertarian | Libertarian | 500k |
+### Political Sector
+```python
+POLITICAL_SUBREDDITS = [
+    'politics',           # Left-leaning general
+    'conservative',       # Right-leaning
+    'moderatepolitics',   # Center
+    'NeutralPolitics',    # Evidence-based discussion
+    'AskTrumpsupporters', # Conservative perspective
+    'progressive',        # Left-wing
+    'Libertarian',        # Libertarian
+    'centrist',          # Moderate
+]
+```
+
+### Demographic-Rich (for inference training)
+```python
+DEMOGRAPHIC_SUBREDDITS = [
+    'teenagers',          # Age: <20
+    'AskOldPeople',       # Age: 60+
+    'TwoXChromosomes',    # Gender: Female
+    'AskMen',            # Gender: Male
+    'blackladies',       # Race + Gender
+    'AsianAmerican',     # Ethnicity
+]
+```
+
+---
+
+## Data Schema (What to Scrape)
+
+### Minimum Required Fields
+```sql
+CREATE TABLE reddit_posts (
+    id VARCHAR(20) PRIMARY KEY,           -- Reddit post ID
+    subreddit VARCHAR(50) NOT NULL,       -- Subreddit name
+    title TEXT NOT NULL,                  -- Post title
+    selftext TEXT,                        -- Post body (null for links)
+    author VARCHAR(50),                   -- Username (can be [deleted])
+    created_utc BIGINT NOT NULL,          -- Unix timestamp
+    score INTEGER,                        -- Upvotes - downvotes
+    num_comments INTEGER,                 -- Comment count
+    permalink TEXT,                       -- Reddit URL path
+    scraped_at TIMESTAMP DEFAULT NOW(),   -- When we collected it
+    
+    -- Indexes for common queries
+    INDEX idx_subreddit (subreddit),
+    INDEX idx_created (created_utc),
+    INDEX idx_author (author)
+);
+```
+
+### Optional Enrichment Fields
+```sql
+-- Add if needed for analysis
+url TEXT,                    -- External link URL
+is_self BOOLEAN,             -- Self-post vs link
+link_flair_text VARCHAR(100),-- Post flair
+over_18 BOOLEAN,             -- NSFW flag
+```
+
+---
 
 ## Scraping Strategy
 
-1. **Time range**: Posts from 2022-01-01 to 2024-06-30 (pre-prediction window)
-2. **Sort**: Use `top` (time-filtered) and `hot` — skip `new` (too noisy)
-3. **Minimum score**: 5+ upvotes to filter spam/low-effort
-4. **Collect both posts and top-level comments** — comments often have richer demographic signals
-5. **Store author bios** when available (user.subreddit.public_description) for demographic inference
-
-## Scraping Pattern
+### Stage 0: Historical Backfill
+**Goal:** Collect diverse corpus quickly
 
 ```python
-def scrape_subreddit(reddit, subreddit_name, limit=1000):
-    sub = reddit.subreddit(subreddit_name)
-    posts = []
-    for submission in sub.top(time_filter="year", limit=limit):
-        posts.append({
-            "source_id": f"t3_{submission.id}",
-            "subreddit": subreddit_name,
-            "author": str(submission.author) if submission.author else "[deleted]",
-            "text": f"{submission.title}\n\n{submission.selftext}" if submission.selftext else submission.title,
-            "score": submission.score,
-            "created_utc": datetime.utcfromtimestamp(submission.created_utc),
-            "metadata": json.dumps({"flair": submission.link_flair_text, "num_comments": submission.num_comments}),
-        })
-    return posts
+# For each subreddit
+for subreddit in TARGET_SUBREDDITS:
+    # Get top posts from last month
+    fetch_posts(subreddit, sort='top', time='month', limit=1000)
+    
+    # Get recent posts
+    fetch_posts(subreddit, sort='new', limit=500)
+    
+# Estimated time: 50 subreddits × 15 requests each ÷ 10 req/min = ~2 hours
 ```
 
-## Running on Lambda CPU
+### Stage 1: Continuous Monitoring
+**Goal:** Stay current with fresh data
 
-Lambda CPU instances are cheap for scraping (no GPU needed):
-```bash
-ssh user@lambda-cpu-instance
-tmux new -s scraper
-cd /home/user/focus_groups
-python3 src/scraper.py --subreddits tech --limit 5000
+```python
+# Every hour
+for subreddit in TARGET_SUBREDDITS:
+    fetch_posts(subreddit, sort='new', limit=25)  # Last hour's posts
+    
+# Estimated: 50 subreddits × 1 request ÷ 10 req/min = 5 minutes per hour
 ```
 
-Use `tmux` so the job survives SSH disconnects.
+---
 
-## Pitfalls
+## Error Handling
 
-- **Deleted/suspended authors**: Check `submission.author is not None` before accessing profile
-- **Rate limit 429s**: PRAW auto-retries but log these. If persistent, your credentials may be flagged
-- **Pushshift is unreliable**: Don't depend on it. Use PRAW listing endpoints + time filtering
-- **Reddit API changes**: Reddit restricted API access in 2023. OAuth with a script app still works for research but monitor for policy changes
-- **Duplicate runs**: Always use `ON CONFLICT DO NOTHING` in DB inserts — re-running a scrape is expected
+### Common Issues
+
+**429 Rate Limit**
+```python
+if response.status_code == 429:
+    retry_after = int(response.headers.get('Retry-After', 60))
+    time.sleep(retry_after)
+    # Retry request
+```
+
+**403 Forbidden (IP blocked)**
+```python
+# Reddit detected scraping behavior
+# Solutions:
+# 1. Add realistic user-agent
+# 2. Increase delays between requests
+# 3. Switch to residential IP
+# 4. Rotate IPs if using proxy service
+```
+
+**500/502/503 Server Errors**
+```python
+# Reddit is down, just retry with exponential backoff
+time.sleep(2 ** attempt)  # 2s, 4s, 8s, 16s...
+```
+
+**Deleted/Private Subreddits**
+```python
+# Subreddit returns 403/404
+# Log and skip, move to next
+```
+
+---
+
+## Anti-Detection Best Practices
+
+### User Agent
+```python
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+}
+```
+
+### Request Timing
+```python
+# Don't use fixed delays - add randomness
+delay = random.uniform(6, 9)  # Not exactly 7 seconds
+time.sleep(delay)
+```
+
+### Pagination
+```python
+# Use Reddit's 'after' token for pagination
+url = f'https://reddit.com/r/{subreddit}/new.json?limit=100&after={after_token}'
+```
+
+### Session Management
+```python
+import requests
+
+# Reuse session for connection pooling
+session = requests.Session()
+session.headers.update({'User-Agent': '...'})
+```
+
+---
+
+## Testing Checklist
+
+Before deploying scraper:
+- [ ] Rate limiting works (measure actual req/min)
+- [ ] Pagination retrieves >100 posts correctly
+- [ ] Error handling recovers from 429/500 errors
+- [ ] Data writes to Postgres without duplicates
+- [ ] Can run for 1+ hour without crashes
+- [ ] Logs are readable and actionable
+
+---
+
+## Monitoring (Stage 1)
+
+Track these metrics:
+- Posts scraped per hour
+- Errors per subreddit
+- Rate limit hits
+- Database write failures
+- Scraper uptime
+
+Alert on:
+- Zero posts scraped for 2+ hours (scraper crashed)
+- >50% error rate (Reddit blocking or API changes)
+- Disk/memory usage spikes
+
+---
+
+## Cost Estimate
+
+**Stage 0 (local):** $0
+- Runs on your laptop
+- ~2-3 days of intermittent scraping
+
+**Stage 1 (Lambda):**
+- CPU instance: $0.30/hr × 730hr/month = $220/month
+- Network egress: ~$5/month
+- **Total: ~$225/month**
+
+**Optimization:** Run scraper only 6 hours/day = $55/month

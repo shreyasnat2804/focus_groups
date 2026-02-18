@@ -47,7 +47,7 @@ Reddit (PRAW) → Postgres (raw posts)
 
 ## Git Workflow
 
-- Commit after every meaningful change on `main`
+- Commit AND push after every meaningful change on `main`
 - Use `git revert` if something breaks — no force-push or history rewriting
 - Feature branches for model experiments later
 
