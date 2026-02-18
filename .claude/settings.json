@@ -17,6 +17,7 @@
         "Bash(git stash*)",
         "Bash(git add *)",
         "Bash(git commit *)",
+        "Bash(git push*)",
         "Bash(docker *)",
         "Bash(docker-compose *)",
         "Bash(gcloud * list*)",
@@ -57,7 +58,6 @@
         "Bash(gsutil rm -r*)"
       ],
       "ask": [
-        "Bash(git push*)",
         "Bash(gcloud run deploy*)",
         "Bash(gcloud sql instances create*)",
         "Bash(gcloud compute instances create*)",

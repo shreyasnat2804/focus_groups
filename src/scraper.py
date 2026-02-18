@@ -29,8 +29,8 @@ SUBREDDITS = {
         "programming",        # mix of text + links
         "homelab",            # text-heavy: project posts
         "buildapc",           # text-heavy: advice requests
-        "technology",         # mostly links — lower yield
-        "apple", "Android", "gadgets",
+        "techsupport",        # text-heavy: help requests
+        "apple", "Android", "AskTechnology",
     ],
     "financial": [
         "personalfinance",        # text-heavy: advice requests
@@ -43,14 +43,14 @@ SUBREDDITS = {
         "wallstreetbets",
     ],
     "political": [
-        "NeutralPolitics",     # text-heavy: evidence-based posts
-        "moderatepolitics",    # text-heavy: discussion
-        "AskTrumpsupporters",  # text-heavy: Q&A
+        "NeutralPolitics",      # text-heavy: evidence-based posts
+        "moderatepolitics",     # text-heavy: discussion
+        "AskTrumpsupporters",   # text-heavy: Q&A
+        "Ask_Politics",         # text-heavy: Q&A format
+        "PoliticalDiscussion",  # text-heavy: discussion
         "conservative",
-        "progressive",
         "Libertarian",
         "centrist",
-        "politics",            # mostly links — lower yield
     ],
 }
 
