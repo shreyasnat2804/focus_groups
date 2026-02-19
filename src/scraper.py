@@ -1,6 +1,6 @@
 """
 Reddit scraper using public JSON endpoints.
-No OAuth/PRAW required. Uses https://www.reddit.com/r/{sub}/top.json
+No OAuth/PRAW required. Uses https://www.reddit.com/r/{sub}/new.json
 Rate limit: ~10 req/min → 6-9s delay between requests.
 Output: data/posts.jsonl (one JSON object per line)
 """
@@ -111,17 +111,26 @@ def iter_subreddit(
     subreddit: str,
     sector: str,
     session: requests.Session,
-    sort: str = "top",
-    time_filter: str = "year",
-    max_pages: int = 5,
+    sort: str = "new",
+    max_pages: int = 20,
+    min_date: datetime | None = None,
 ):
+    """
+    Paginate through a subreddit and yield qualifying posts.
+
+    sort="new" (default) paginates backwards in time — ideal for a date cutoff.
+    min_date: stop paginating once any post on a page falls before this date.
+              Posts before min_date on the final partial page are skipped.
+    """
+    min_date_ts = min_date.timestamp() if min_date else None
     after = None
+
     for page in range(max_pages):
-        url = f"https://www.reddit.com/r/{subreddit}/{sort}.json?limit=100&t={time_filter}"
+        url = f"https://www.reddit.com/r/{subreddit}/{sort}.json?limit=100"
         if after:
             url += f"&after={after}"
 
-        print(f"  [{subreddit}] page {page + 1}/{max_pages} — {url}")
+        print(f"  [{subreddit}] page {page + 1} — {url}")
         data = fetch_json(url, session)
 
         if data is None:
@@ -131,9 +140,16 @@ def iter_subreddit(
         if not children:
             break
 
+        hit_cutoff = False
         for child in children:
             post = child.get("data", {})
             if not post:
+                continue
+
+            # Date cutoff — skip this post; if any post is past cutoff, stop after page
+            created_ts = post.get("created_utc", 0) or 0
+            if min_date_ts and created_ts < min_date_ts:
+                hit_cutoff = True
                 continue
 
             score = post.get("score", 0) or 0
@@ -163,6 +179,10 @@ def iter_subreddit(
                 "permalink": post.get("permalink", ""),
                 "scraped_at": datetime.now(timezone.utc).isoformat(),
             }
+
+        if hit_cutoff:
+            print(f"  [{subreddit}] reached date cutoff — stopping")
+            break
 
         after = data.get("data", {}).get("after")
         if not after:
@@ -197,8 +217,9 @@ def _try_get_db_conn():
 
 def run(
     sectors: list[str] | None = None,
-    max_pages_per_sub: int = 2,
+    max_pages_per_sub: int = 20,
     probe: bool = False,
+    min_date: datetime | None = datetime(2021, 1, 1, tzinfo=timezone.utc),
 ):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     targets = {k: v for k, v in SUBREDDITS.items() if sectors is None or k in sectors}
@@ -241,7 +262,7 @@ def run(
             for sub in subs:
                 print(f"\n=== {sector.upper()} / r/{sub} ===")
                 batch = []
-                for post in iter_subreddit(sub, sector, session, max_pages=max_pages_per_sub):
+                for post in iter_subreddit(sub, sector, session, max_pages=max_pages_per_sub, min_date=min_date):
                     if post["id"] in seen_ids:
                         continue
                     seen_ids.add(post["id"])
@@ -296,4 +317,5 @@ if __name__ == "__main__":
         print("PROBE MODE: 1 subreddit per sector, 1 page each")
         run(max_pages_per_sub=1, probe=True)
     else:
-        run(max_pages_per_sub=2)
+        print("Scraping 2021–2026 posts across all sectors (target: 30k)")
+        run()
