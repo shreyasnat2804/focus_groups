@@ -45,7 +45,13 @@ def run_report(conn, verbose: bool = False) -> None:
         print("-" * 40)
         for dim in dimensions:
             cur.execute(
-                "SELECT COUNT(DISTINCT post_id) FROM demographic_tags WHERE dimension = %s",
+                """
+                SELECT COUNT(DISTINCT dt.post_id)
+                FROM demographic_tags dt
+                JOIN demographic_values dv ON dv.id = dt.demographic_value_id
+                JOIN demographic_dimensions dd ON dd.id = dv.dimension_id
+                WHERE dd.name = %s
+                """,
                 (dim,),
             )
             count = cur.fetchone()[0]
@@ -88,10 +94,12 @@ def run_report(conn, verbose: bool = False) -> None:
         for dim in dimensions:
             cur.execute(
                 """
-                SELECT value, COUNT(*) AS cnt
-                FROM demographic_tags
-                WHERE dimension = %s
-                GROUP BY value
+                SELECT dv.value, COUNT(*) AS cnt
+                FROM demographic_tags dt
+                JOIN demographic_values dv ON dv.id = dt.demographic_value_id
+                JOIN demographic_dimensions dd ON dd.id = dv.dimension_id
+                WHERE dd.name = %s
+                GROUP BY dv.value
                 ORDER BY cnt DESC
                 LIMIT 5
                 """,

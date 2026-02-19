@@ -37,18 +37,20 @@ QUERY = """
 SELECT
     p.source_id,
     p.subreddit,
-    p.metadata->>'sector'   AS sector,
+    p.metadata->>'sector'    AS sector,
     p.author,
     p.score,
     p.created_utc,
     p.text,
-    dt.dimension,
-    dt.value,
+    dd.name                  AS dimension,
+    dv.value,
     dt.confidence,
     dt.method
 FROM posts p
-JOIN demographic_tags dt ON dt.post_id = p.id
-ORDER BY p.id, dt.dimension, dt.method
+JOIN demographic_tags       dt ON dt.post_id              = p.id
+JOIN demographic_values     dv ON dv.id                   = dt.demographic_value_id
+JOIN demographic_dimensions dd ON dd.id                   = dv.dimension_id
+ORDER BY p.id, dd.name, dt.method
 """
 
 COLUMNS = [

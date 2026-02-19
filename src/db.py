@@ -97,20 +97,41 @@ def get_post_ids_by_source_ids(conn, source_ids: list[str]) -> dict[str, int]:
         return {row[0]: row[1] for row in cur.fetchall()}
 
 
-def insert_tags(conn, tags: list[dict]) -> int:
+def load_demographic_value_ids(conn) -> dict[tuple[str, str], int]:
+    """
+    Returns {(dimension_name, value): demographic_value_id} from lookup tables.
+    Small static set (~14 rows) — call once at startup and pass to insert_tags
+    when doing bulk inserts to avoid repeated round-trips.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT dd.name, dv.value, dv.id
+            FROM demographic_values dv
+            JOIN demographic_dimensions dd ON dd.id = dv.dimension_id
+            """
+        )
+        return {(row[0], row[1]): row[2] for row in cur.fetchall()}
+
+
+def insert_tags(conn, tags: list[dict], value_ids: dict = None) -> int:
     """
     Bulk-insert demographic tags. ON CONFLICT DO NOTHING (idempotent re-runs).
     Each dict must have: post_id, dimension, value, confidence, method.
+    value_ids: optional pre-loaded {(dimension, value): id} map — pass it when
+               calling in a tight loop to avoid a DB round-trip per batch.
     Returns count of rows actually inserted.
     """
     if not tags:
         return 0
 
+    if value_ids is None:
+        value_ids = load_demographic_value_ids(conn)
+
     rows = [
         (
             t["post_id"],
-            t["dimension"],
-            t["value"],
+            value_ids[(t["dimension"], t["value"])],
             t["confidence"],
             t["method"],
         )
@@ -121,9 +142,9 @@ def insert_tags(conn, tags: list[dict]) -> int:
         execute_values(
             cur,
             """
-            INSERT INTO demographic_tags (post_id, dimension, value, confidence, method)
+            INSERT INTO demographic_tags (post_id, demographic_value_id, confidence, method)
             VALUES %s
-            ON CONFLICT (post_id, dimension, method) DO NOTHING
+            ON CONFLICT (post_id, demographic_value_id, method) DO NOTHING
             """,
             rows,
         )
