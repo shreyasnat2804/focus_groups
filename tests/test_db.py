@@ -15,7 +15,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.db import get_conn, insert_posts, get_post_ids_by_source_ids, insert_tags
+from src.db import get_conn, insert_posts, get_post_ids_by_source_ids, insert_tags, _sanitize_text
 
 
 @pytest.fixture(scope="module")
@@ -128,6 +128,57 @@ def test_insert_tags_empty_list(conn):
     """Empty tag list returns 0 without error."""
     n = insert_tags(conn, [])
     assert n == 0
+
+
+# ---------------------------------------------------------------------------
+# UTF-8 sanitization
+# ---------------------------------------------------------------------------
+
+def test_sanitize_text_valid_unicode():
+    """Normal strings pass through unchanged."""
+    s = "I'm 28 years old — making $80k/year with 'smart quotes'"
+    assert _sanitize_text(s) == s
+
+
+def test_sanitize_text_lone_surrogate():
+    """Lone surrogate (U+D800) is replaced with U+FFFD, not stored as invalid UTF-8."""
+    bad = "hello \ud800 world"        # lone surrogate — invalid UTF-8
+    result = _sanitize_text(bad)
+    assert "\ud800" not in result      # surrogate gone
+    assert "\ufffd" in result          # replaced with U+FFFD
+    result.encode("utf-8")            # must be encodable without error
+
+
+def test_sanitize_text_none_and_empty():
+    assert _sanitize_text(None) == ""
+    assert _sanitize_text("") == ""
+
+
+def test_insert_posts_with_unicode_text(conn):
+    """Posts with curly quotes, em-dashes, emoji insert and query without error."""
+    post = _make_post("_utf8")
+    post["selftext"] = "Smart quotes \u2018like this\u2019 and em\u2014dashes are fine."
+    n = insert_posts(conn, [post])
+    assert n == 1
+    id_map = get_post_ids_by_source_ids(conn, [post["id"]])
+    assert post["id"] in id_map
+
+
+def test_insert_posts_sanitizes_surrogate(conn):
+    """Posts whose text contains a lone surrogate are sanitized and inserted cleanly."""
+    post = _make_post("_surr")
+    post["selftext"] = "Bad char: \ud800 end"   # lone surrogate
+    # Should not raise — _sanitize_text replaces the surrogate
+    n = insert_posts(conn, [post])
+    assert n == 1
+    # Verify the stored text is queryable (no CharacterNotInRepertoire on read)
+    id_map = get_post_ids_by_source_ids(conn, [post["id"]])
+    db_id = id_map[post["id"]]
+    with conn.cursor() as cur:
+        cur.execute("SELECT text FROM posts WHERE id = %s", (db_id,))
+        text = cur.fetchone()[0]
+    assert "\ud800" not in text        # surrogate was replaced
+    assert text                        # non-empty
 
 
 def test_insert_tags_multiple_methods_same_dimension(conn):

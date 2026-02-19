@@ -58,6 +58,10 @@ def main(verbose: bool = False) -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = get_conn()
     try:
+        # SQL_ASCII bypasses server-side UTF-8 validation so rows with
+        # invalid byte sequences (stored via earlier non-strict inserts)
+        # are returned as-is instead of raising CharacterNotInRepertoire.
+        conn.set_client_encoding('SQL_ASCII')
         with conn.cursor() as cur:
             cur.execute(QUERY, {"preview": TEXT_PREVIEW_CHARS})
             rows = cur.fetchall()

@@ -20,6 +20,19 @@ def get_conn():
     )
 
 
+def _sanitize_text(s) -> str:
+    """
+    Ensure a string is valid UTF-8 before inserting into Postgres.
+    Replaces any surrogate chars or lone high bytes with the Unicode
+    replacement character (U+FFFD) so the DB never receives invalid bytes.
+    """
+    if not s:
+        return s or ""
+    # surrogatepass lets encode() handle lone surrogates as CESU-8 byte sequences;
+    # the subsequent UTF-8 decode then replaces those invalid sequences with U+FFFD.
+    return s.encode("utf-8", errors="surrogatepass").decode("utf-8", errors="replace")
+
+
 def insert_posts(conn, posts: list[dict]) -> int:
     """
     Bulk-insert scraped posts. Skips duplicates (ON CONFLICT DO NOTHING).
@@ -38,8 +51,8 @@ def insert_posts(conn, posts: list[dict]) -> int:
             p["id"],                         # source_id
             p.get("subreddit", ""),
             p.get("author", ""),
-            p.get("title", ""),
-            p.get("selftext", ""),           # text
+            _sanitize_text(p.get("title", "")),
+            _sanitize_text(p.get("selftext", "")),  # text
             p.get("score", 0),
             p.get("num_comments", 0),
             created,
