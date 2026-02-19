@@ -22,6 +22,29 @@ MIN_SCORE = 5
 MIN_BODY_CHARS = 50
 REQUEST_DELAY = (6, 9)
 
+# Region codes for subreddits with a clear geographic audience.
+# Subreddits not listed here are treated as US/global (region=None).
+SUBREDDIT_REGIONS: dict[str, str] = {
+    # UK
+    "UKPersonalFinance": "UK",
+    "ukpolitics":        "UK",
+    "unitedkingdom":     "UK",
+    # Australia
+    "AusFinance":          "AU",
+    "AustralianPolitics":  "AU",
+    "australia":           "AU",
+    # Canada
+    "CanadianInvestor": "CA",
+    "PersonalFinanceCanada": "CA",
+    "CanadaPolitics":   "CA",
+    # India
+    "personalfinanceindia": "IN",
+    "IndiaInvestments":     "IN",
+    # Europe
+    "eupersonalfinance": "EU",
+    "europe":            "EU",
+}
+
 SUBREDDITS = {
     # First sub in each sector is the probe target — must be text-heavy (self-posts)
     "tech": [
@@ -31,6 +54,14 @@ SUBREDDITS = {
         "buildapc",           # text-heavy: advice requests
         "techsupport",        # text-heavy: help requests
         "apple", "Android", "AskTechnology",
+        "learnprogramming",   # text-heavy: beginner Q&A
+        "webdev",             # text-heavy: dev discussions
+        "devops",             # text-heavy: ops discussions
+        "sysadmin",           # text-heavy: IT discussions
+        "MachineLearning",    # research + discussion
+        "datascience",        # text-heavy: career + methods
+        "ExperiencedDevs",    # text-heavy: senior eng discussions
+        "cybersecurity",      # text-heavy: security Q&A
     ],
     "financial": [
         "personalfinance",        # text-heavy: advice requests
@@ -41,6 +72,14 @@ SUBREDDITS = {
         "Frugal",
         "investing",
         "wallstreetbets",
+        "financialplanning",      # text-heavy: planning Q&A
+        "realestateinvesting",    # text-heavy: RE discussion
+        "UKPersonalFinance",      # text-heavy — region: UK
+        "AusFinance",             # text-heavy — region: AU
+        "CanadianInvestor",       # text-heavy — region: CA
+        "PersonalFinanceCanada",  # text-heavy — region: CA
+        "personalfinanceindia",   # text-heavy — region: IN
+        "eupersonalfinance",      # text-heavy — region: EU
     ],
     "political": [
         "NeutralPolitics",      # text-heavy: evidence-based posts
@@ -51,6 +90,10 @@ SUBREDDITS = {
         "conservative",
         "Libertarian",
         "centrist",
+        "AskALiberal",          # text-heavy: Q&A complement
+        "ukpolitics",           # text-heavy — region: UK
+        "AustralianPolitics",   # text-heavy — region: AU
+        "CanadaPolitics",       # text-heavy — region: CA
     ],
 }
 
@@ -169,6 +212,7 @@ def iter_subreddit(
             yield {
                 "id": post["id"],
                 "sector": sector,
+                "region": SUBREDDIT_REGIONS.get(subreddit),  # None = US/global
                 "subreddit": subreddit,
                 "title": post.get("title", "").strip(),
                 "selftext": body,

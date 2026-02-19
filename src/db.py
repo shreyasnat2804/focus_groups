@@ -59,6 +59,7 @@ def insert_posts(conn, posts: list[dict]) -> int:
             p.get("scraped_at"),
             Json({                           # metadata JSONB
                 "sector": p.get("sector"),
+                "region": p.get("region"),   # None = US/global
                 "permalink": p.get("permalink", ""),
             }),
         ))

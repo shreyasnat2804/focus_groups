@@ -245,6 +245,29 @@ SUBREDDIT_PRIORS: dict[str, dict[str, tuple[str, float]]] = {
     "conservative":          {"age_group": ("35-44", 0.4)},
     "Libertarian":           {"age_group": ("25-34", 0.4)},
     "centrist":              {"age_group": ("25-34", 0.4)},
+    # Tech — new subs
+    "learnprogramming":      {"age_group": ("18-24", 0.5), "income_bracket": ("middle_income", 0.4)},
+    "webdev":                {"age_group": ("25-34", 0.4), "income_bracket": ("middle_income", 0.4)},
+    "devops":                {"age_group": ("25-34", 0.4), "income_bracket": ("high_income", 0.5)},
+    "sysadmin":              {"age_group": ("25-34", 0.4), "income_bracket": ("middle_income", 0.4)},
+    "MachineLearning":       {"age_group": ("25-34", 0.4), "income_bracket": ("middle_income", 0.4)},
+    "datascience":           {"age_group": ("25-34", 0.4), "income_bracket": ("middle_income", 0.5)},
+    "ExperiencedDevs":       {"age_group": ("35-44", 0.5), "income_bracket": ("high_income", 0.5)},
+    "cybersecurity":         {"age_group": ("25-34", 0.4), "income_bracket": ("middle_income", 0.4)},
+    # Financial — new subs
+    "financialplanning":     {"income_bracket": ("middle_income", 0.4)},
+    "realestateinvesting":   {"income_bracket": ("middle_income", 0.5), "age_group": ("35-44", 0.4)},
+    "UKPersonalFinance":     {"income_bracket": ("middle_income", 0.4)},
+    "AusFinance":            {"income_bracket": ("middle_income", 0.4)},
+    "CanadianInvestor":      {"income_bracket": ("middle_income", 0.4)},
+    "PersonalFinanceCanada": {"income_bracket": ("middle_income", 0.4)},
+    "personalfinanceindia":  {"income_bracket": ("middle_income", 0.4)},
+    "eupersonalfinance":     {"income_bracket": ("middle_income", 0.4)},
+    # Political — new subs
+    "AskALiberal":           {"age_group": ("25-34", 0.4)},
+    "ukpolitics":            {"age_group": ("25-34", 0.4)},
+    "AustralianPolitics":    {"age_group": ("25-34", 0.4)},
+    "CanadaPolitics":        {"age_group": ("25-34", 0.4)},
     # Age-specific
     "teenagers":             {"age_group": ("under_18", 0.7)},
     # Gender-specific
