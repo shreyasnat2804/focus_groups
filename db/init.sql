@@ -49,6 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_subreddit ON posts(subreddit);
 CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_utc);
 CREATE INDEX IF NOT EXISTS idx_tags_post ON demographic_tags(post_id);
 CREATE INDEX IF NOT EXISTS idx_tags_dimension_value ON demographic_tags(dimension, value);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tags_unique ON demographic_tags(post_id, dimension, method);
 CREATE INDEX IF NOT EXISTS idx_embeddings_post ON post_embeddings(post_id);
 CREATE INDEX IF NOT EXISTS idx_sectors_post ON post_sectors(post_id);
 

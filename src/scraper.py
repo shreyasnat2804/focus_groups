@@ -223,9 +223,16 @@ def run(
         print("No DB — writing to JSONL only")
 
     try:
-        from db import insert_posts  # type: ignore
+        from db import insert_posts, get_post_ids_by_source_ids, insert_tags  # type: ignore
     except ImportError:
         insert_posts = None
+        get_post_ids_by_source_ids = None
+        insert_tags = None
+
+    try:
+        from tagger import tag_post  # type: ignore
+    except ImportError:
+        tag_post = None
 
     with open(OUTPUT_FILE, "a") as out:
         for sector, subs in targets.items():
@@ -252,6 +259,25 @@ def run(
                         print(f"  → {n} rows inserted into DB ({db_total} total)")
                     except Exception as exc:
                         print(f"  [db insert error] {exc}")
+                        batch = []  # don't attempt tagging if insert failed
+
+                if conn and get_post_ids_by_source_ids and insert_tags and tag_post and batch:
+                    try:
+                        id_map = get_post_ids_by_source_ids(conn, [p["id"] for p in batch])
+                        tag_rows = []
+                        for post in batch:
+                            db_id = id_map.get(post["id"])
+                            if db_id is None:
+                                continue  # duplicate post, already tagged
+                            text = f"{post.get('title', '')} {post.get('selftext', '')}"
+                            for tag in tag_post(text, post["subreddit"]):
+                                tag["post_id"] = db_id
+                                tag_rows.append(tag)
+                        if tag_rows:
+                            n_tags = insert_tags(conn, tag_rows)
+                            print(f"  → {n_tags} tags inserted")
+                    except Exception as exc:
+                        print(f"  [tagger error] {exc}")
 
                 delay = random.uniform(*REQUEST_DELAY)
                 print(f"  switching subreddit — sleeping {delay:.1f}s")

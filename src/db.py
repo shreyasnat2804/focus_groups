@@ -66,3 +66,55 @@ def insert_posts(conn, posts: list[dict]) -> int:
 
     conn.commit()
     return inserted
+
+
+def get_post_ids_by_source_ids(conn, source_ids: list[str]) -> dict[str, int]:
+    """
+    Returns {source_id: db_id} for all matching posts.
+    Missing source_ids are simply absent from the result dict.
+    """
+    if not source_ids:
+        return {}
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT source_id, id FROM posts WHERE source_id = ANY(%s)",
+            (source_ids,),
+        )
+        return {row[0]: row[1] for row in cur.fetchall()}
+
+
+def insert_tags(conn, tags: list[dict]) -> int:
+    """
+    Bulk-insert demographic tags. ON CONFLICT DO NOTHING (idempotent re-runs).
+    Each dict must have: post_id, dimension, value, confidence, method.
+    Returns count of rows actually inserted.
+    """
+    if not tags:
+        return 0
+
+    rows = [
+        (
+            t["post_id"],
+            t["dimension"],
+            t["value"],
+            t["confidence"],
+            t["method"],
+        )
+        for t in tags
+    ]
+
+    with conn.cursor() as cur:
+        execute_values(
+            cur,
+            """
+            INSERT INTO demographic_tags (post_id, dimension, value, confidence, method)
+            VALUES %s
+            ON CONFLICT (post_id, dimension, method) DO NOTHING
+            """,
+            rows,
+        )
+        inserted = cur.rowcount
+
+    conn.commit()
+    return inserted
