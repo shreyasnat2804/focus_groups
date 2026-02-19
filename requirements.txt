@@ -1,3 +1,6 @@
 requests==2.32.3
 psycopg2-binary==2.9.10
 python-dotenv==1.0.1
+sentence-transformers>=3.0
+pgvector>=0.3.0
+numpy>=1.24
