@@ -24,11 +24,18 @@ echo "--- [1/6] Running unit tests ---"
 $PYTHON -m pytest tests/test_tagger.py -v
 echo
 
-# 2. Start Docker Postgres
-echo "--- [2/6] Starting Docker Postgres ---"
-docker compose up -d
-echo "Waiting 5s for Postgres to be ready..."
-sleep 5
+# 2. Ensure Postgres is reachable (Docker or native Homebrew)
+echo "--- [2/6] Checking Postgres ---"
+if command -v docker &>/dev/null; then
+    echo "Docker found — starting via docker compose..."
+    docker compose up -d
+    echo "Waiting 5s for Postgres to be ready..."
+    sleep 5
+else
+    echo "Docker not found — assuming native Postgres is running."
+fi
+# Fail fast if DB is unreachable
+$PYTHON -c "from src.db import get_conn; get_conn().close(); print('DB connection OK')"
 echo
 
 # 3. Apply unique index migration
