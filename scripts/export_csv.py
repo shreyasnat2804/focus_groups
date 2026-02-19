@@ -28,6 +28,11 @@ OUTPUT_FILE = DATA_DIR / "posts_tagged.csv"
 
 TEXT_PREVIEW_CHARS = 200
 
+# NOTE: do NOT use LEFT()/SUBSTRING() here — those functions count Unicode
+# characters, which forces Postgres to parse every byte as UTF-8. Posts with
+# invalid UTF-8 byte sequences (e.g. truncated multibyte chars from scraping)
+# will raise CharacterNotInRepertoire. Fetching p.text raw is a passthrough
+# with no byte-level validation; we truncate in Python instead.
 QUERY = """
 SELECT
     p.source_id,
@@ -36,7 +41,7 @@ SELECT
     p.author,
     p.score,
     p.created_utc,
-    LEFT(p.text, %(preview)s)  AS text_preview,
+    p.text,
     dt.dimension,
     dt.value,
     dt.confidence,
@@ -54,19 +59,28 @@ COLUMNS = [
 SAMPLE_ROWS = 3
 
 
+def _truncate(val, n: int) -> str:
+    """Truncate a string to n chars in Python — safe for any byte content."""
+    if val is None:
+        return ""
+    return str(val)[:n]
+
+
 def main(verbose: bool = False) -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = get_conn()
     try:
-        # SQL_ASCII bypasses server-side UTF-8 validation so rows with
-        # invalid byte sequences (stored via earlier non-strict inserts)
-        # are returned as-is instead of raising CharacterNotInRepertoire.
-        conn.set_client_encoding('SQL_ASCII')
         with conn.cursor() as cur:
-            cur.execute(QUERY, {"preview": TEXT_PREVIEW_CHARS})
-            rows = cur.fetchall()
+            cur.execute(QUERY)
+            raw_rows = cur.fetchall()
 
-        with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
+        # Truncate text_preview (column index 6) in Python, not SQL
+        rows = [
+            row[:6] + (_truncate(row[6], TEXT_PREVIEW_CHARS),) + row[7:]
+            for row in raw_rows
+        ]
+
+        with open(OUTPUT_FILE, "w", newline="", encoding="utf-8", errors="replace") as f:
             writer = csv.writer(f)
             writer.writerow(COLUMNS)
             writer.writerows(rows)
