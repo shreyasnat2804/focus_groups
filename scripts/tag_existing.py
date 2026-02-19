@@ -3,9 +3,11 @@ Retroactively tag posts already in the DB that have no demographic_tags rows.
 Processes in batches of 500.
 
 Usage:
-    python3 scripts/tag_existing.py
+    python3 scripts/tag_existing.py           # summary only
+    python3 scripts/tag_existing.py -v        # per-batch progress
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -39,7 +41,7 @@ def fetch_untagged_batch(conn, offset: int, limit: int) -> list[dict]:
     ]
 
 
-def main():
+def main(verbose: bool = False) -> None:
     conn = get_conn()
     try:
         offset = 0
@@ -65,16 +67,21 @@ def main():
             else:
                 n = 0
 
-            print(
-                f"Batch {batch_num}: processed {len(batch)} posts, "
-                f"inserted {n} tags (total tags: {total_tagged})"
-            )
+            if verbose:
+                print(
+                    f"Batch {batch_num}: processed {len(batch)} posts, "
+                    f"inserted {n} tags (total tags: {total_tagged})"
+                )
             offset += len(batch)
 
-        print(f"\nDone. Tagged {offset} posts, {total_tagged} tag rows inserted.")
+        print(f"Done. {offset:,} posts processed, {total_tagged:,} tag rows inserted.")
     finally:
         conn.close()
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Tag untagged posts in DB.")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print per-batch progress.")
+    args = parser.parse_args()
+    main(verbose=args.verbose)

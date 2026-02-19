@@ -1,17 +1,16 @@
 """
 Data quality report — coverage analysis for demographic tags.
 
-Prints:
-  - Total posts in DB
-  - Posts with ≥1 tag (and %)
-  - Per-dimension coverage
-  - Breakdown by sector
-  - Top 5 values per dimension
+Default: summary (totals + per-dimension coverage).
+Verbose (-v): also prints sector breakdown, top values per dimension,
+              and tag method breakdown.
 
 Usage:
-    python3 scripts/quality_report.py
+    python3 scripts/quality_report.py         # summary
+    python3 scripts/quality_report.py -v      # full report
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -20,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.db import get_conn
 
 
-def run_report(conn) -> None:
+def run_report(conn, verbose: bool = False) -> None:
     with conn.cursor() as cur:
 
         # Total posts
@@ -28,9 +27,7 @@ def run_report(conn) -> None:
         total_posts = cur.fetchone()[0]
 
         # Posts with ≥1 tag
-        cur.execute(
-            "SELECT COUNT(DISTINCT post_id) FROM demographic_tags"
-        )
+        cur.execute("SELECT COUNT(DISTINCT post_id) FROM demographic_tags")
         tagged_posts = cur.fetchone()[0]
 
         pct_tagged = (tagged_posts / total_posts * 100) if total_posts else 0.0
@@ -42,7 +39,7 @@ def run_report(conn) -> None:
         print(f"Posts with ≥1 tag       : {tagged_posts:,}  ({pct_tagged:.1f}%)")
         print()
 
-        # Per-dimension coverage
+        # Per-dimension coverage (always shown)
         dimensions = ["age_group", "gender", "parent_status", "income_bracket"]
         print("DIMENSION COVERAGE")
         print("-" * 40)
@@ -55,6 +52,13 @@ def run_report(conn) -> None:
             pct = (count / total_posts * 100) if total_posts else 0.0
             print(f"  {dim:<20} {count:>7,}  ({pct:.1f}%)")
         print()
+
+        if not verbose:
+            print("=" * 60)
+            print("Tip: run with -v for sector breakdown, top values, and method split.")
+            return
+
+        # Verbose-only sections below
 
         # Breakdown by sector
         print("TAGGED POSTS BY SECTOR")
@@ -117,16 +121,21 @@ def run_report(conn) -> None:
         for method, cnt in rows:
             print(f"  {method:<25} {cnt:>7,}")
         print()
+
         print("=" * 60)
 
 
-def main():
+def main(verbose: bool = False) -> None:
     conn = get_conn()
     try:
-        run_report(conn)
+        run_report(conn, verbose=verbose)
     finally:
         conn.close()
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Demographic tagging quality report.")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print sector breakdown, top values, and method split.")
+    args = parser.parse_args()
+    main(verbose=args.verbose)

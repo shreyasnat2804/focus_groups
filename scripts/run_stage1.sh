@@ -1,11 +1,22 @@
 #!/usr/bin/env bash
 # Stage 1 verification — run from project root:
-#   bash scripts/run_stage1.sh
+#   bash scripts/run_stage1.sh        # summary output
+#   bash scripts/run_stage1.sh -v     # verbose output
 set -euo pipefail
 
 PYTHON=".venv/bin/python"
+VERBOSE=""
+
+# Parse flags
+for arg in "$@"; do
+    case "$arg" in
+        -v|--verbose) VERBOSE="-v" ;;
+        *) echo "Unknown flag: $arg" >&2; exit 1 ;;
+    esac
+done
 
 echo "=== Stage 1: Data Pipeline & Infrastructure ==="
+[[ -n "$VERBOSE" ]] && echo "(verbose mode)"
 echo
 
 # 1. Unit tests (no DB needed)
@@ -22,22 +33,22 @@ echo
 
 # 3. Apply unique index migration
 echo "--- [3/6] Applying schema migration ---"
-$PYTHON scripts/migrate_tags_unique_index.py
+$PYTHON scripts/migrate_tags_unique_index.py $VERBOSE
 echo
 
 # 4. Tag existing posts
 echo "--- [4/6] Tagging existing posts ---"
-$PYTHON scripts/tag_existing.py
+$PYTHON scripts/tag_existing.py $VERBOSE
 echo
 
 # 5. Quality report
 echo "--- [5/6] Quality report ---"
-$PYTHON scripts/quality_report.py
+$PYTHON scripts/quality_report.py $VERBOSE
 echo
 
 # 6. Export CSV
 echo "--- [6/6] Exporting CSV ---"
-$PYTHON scripts/export_csv.py
+$PYTHON scripts/export_csv.py $VERBOSE
 echo
 
 # Verify output
