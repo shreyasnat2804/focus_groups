@@ -41,30 +41,34 @@ As of November 2025, Reddit eliminated self-service API access. OAuth credential
 
 ## Stage 1: Data Pipeline & Infrastructure
 
-**Goal:** Production-grade data collection and storage
+**Goal:** Validate pipeline with real data before cloud deployment
 
 **What to Build:**
-- Continuous scraper using JSON endpoints running on Lambda CPU instance
+- Local scraper using JSON endpoints (runs on your laptop)
 - Automated demographic tagging on ingestion
-- Cloud SQL (Postgres + pgvector) on GCP
-- Data quality checks and monitoring
-- Backup and recovery processes
+- Local Postgres + pgvector (Docker)
+- Basic data quality checks
+- Export capabilities for cloud migration later
 
 **Scraper Implementation:**
-Uses Reddit's public JSON endpoints (no OAuth required). Implements strict 10 req/min rate limiting with exponential backoff on 429 errors. Rotates user agents and adds randomized delays to avoid detection. Handles pagination for subreddits with >100 posts.
+Uses Reddit's public JSON endpoints (no OAuth required). Implements strict 10 req/min rate limiting with exponential backoff on 429 errors. Rotates user agents and adds randomized delays to avoid detection. Handles pagination for subreddits with >100 posts. Target: 30K posts across key subreddits (financial, tech, political sectors).
 
 **Deliverables:**
-- Scraper runs 24/7 with automatic recovery
-- Database grows continuously with fresh data
-- Demographic tags applied in real-time
-- Monitoring dashboard showing data health
-- 500K+ tagged posts across all sectors
+- 30K tagged posts in local Postgres database
+- Demographic tags applied during ingestion
+- Basic analysis scripts showing coverage
+- Data quality report (what % tagged successfully)
+- CSV export for backup
 
 **Success Criteria:**
-- Pipeline runs unsupervised for 7+ days without failures
-- Data quality metrics above threshold (>80% tagged posts)
-- Cost under budget (<$100/month)
-- Can pause/resume scraping without data loss
+- Successfully collect 30K posts without IP blocks
+- Data quality metrics above threshold (>70% tagged posts)
+- Cost: $0 (runs locally)
+- Can export data for cloud migration later
+- Clear understanding of which demographics are well-represented
+
+**Next Step After Stage 1:**
+Move to cloud infrastructure (GCP e2-micro or DigitalOcean) for continuous updates only after validating the pipeline works with this initial dataset.
 
 ---
 

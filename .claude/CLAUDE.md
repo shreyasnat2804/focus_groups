@@ -52,7 +52,7 @@ Reddit (PRAW) → Postgres (raw posts)
 - Feature branches for model experiments later
 
 ## Testing
-
+- Before every coding task, describe and implement robust testers for what you expect the code to do.
 - Tests in `tests/` directory, named `test_<module>.py`
 - Run with `python3 -m pytest tests/`
 
