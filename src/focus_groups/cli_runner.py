@@ -15,18 +15,22 @@ import argparse
 import sys
 from io import StringIO
 
+from focus_groups.export import export_csv, export_pdf
 from focus_groups.personas.selection import select_personas
 from focus_groups.claude import get_client, run_focus_group
 from focus_groups.db import get_conn
-from focus_groups.sessions import create_session, save_responses, complete_session, fail_session
+from focus_groups.sessions import create_session, save_responses, complete_session, fail_session, get_session
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a synthetic focus group session.")
-    parser.add_argument("--question", required=True, help="The focus group question.")
+    parser.add_argument("--question", default=None, help="The focus group question (required for run mode).")
     parser.add_argument("--sector", default=None, help="Sector filter: tech, financial, political.")
     parser.add_argument("--num-personas", type=int, default=5, help="Number of personas (default 5).")
     parser.add_argument("--no-save", action="store_true", help="Skip saving results to DB.")
+    parser.add_argument("--session-id", type=int, default=None, help="Session ID for export (use with --export-csv/--export-pdf).")
+    parser.add_argument("--export-csv", default=None, metavar="PATH", help="Export session to CSV file.")
+    parser.add_argument("--export-pdf", default=None, metavar="PATH", help="Export session to PDF file.")
     return parser.parse_args(argv)
 
 
@@ -90,8 +94,41 @@ def run_pipeline(
     conn.close()
 
 
+def export_session(session_id: int, csv_path: str | None, pdf_path: str | None) -> None:
+    """Fetch a session from DB and write CSV/PDF exports to disk."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+    finally:
+        conn.close()
+
+    if session is None:
+        print(f"Session {session_id} not found.")
+        return
+
+    if csv_path:
+        with open(csv_path, "w") as f:
+            f.write(export_csv(session))
+        print(f"CSV exported to {csv_path}")
+
+    if pdf_path:
+        with open(pdf_path, "wb") as f:
+            f.write(export_pdf(session))
+        print(f"PDF exported to {pdf_path}")
+
+
 def main():
     args = parse_args()
+
+    # Export mode: --session-id with --export-csv/--export-pdf
+    if args.session_id is not None:
+        export_session(args.session_id, args.export_csv, args.export_pdf)
+        return
+
+    if args.question is None:
+        print("Error: --question is required for run mode.")
+        sys.exit(1)
+
     run_pipeline(
         question=args.question,
         sector=args.sector,

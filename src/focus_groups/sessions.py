@@ -29,7 +29,7 @@ def create_session(
             VALUES (%s, %s, %s, %s, 'pending')
             RETURNING id
             """,
-            (sector, Json(demographic_filter), num_personas, question),
+            (sector, Json(demographic_filter), question, num_personas),
         )
         session_id = cur.fetchone()[0]
     conn.commit()

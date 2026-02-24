@@ -181,7 +181,17 @@ def test_parse_args_all_options():
 
 
 def test_parse_args_missing_question():
+    """question is None when not provided (validated at runtime, not parse time)."""
     from focus_groups.cli_runner import parse_args
 
-    with pytest.raises(SystemExit):
-        parse_args(["--num-personas", "3"])
+    args = parse_args(["--num-personas", "3"])
+    assert args.question is None
+
+
+def test_parse_args_export_flags():
+    from focus_groups.cli_runner import parse_args
+
+    args = parse_args(["--session-id", "42", "--export-csv", "out.csv", "--export-pdf", "out.pdf"])
+    assert args.session_id == 42
+    assert args.export_csv == "out.csv"
+    assert args.export_pdf == "out.pdf"

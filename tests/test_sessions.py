@@ -65,8 +65,8 @@ def test_create_session_passes_params():
 
     params = cursor.execute.call_args[0][1]
     assert params[0] == "financial"
-    assert params[2] == 3
-    assert params[3] == "Test?"
+    assert params[2] == "Test?"
+    assert params[3] == 3
 
 
 def test_create_session_none_sector():
