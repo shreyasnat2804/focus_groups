@@ -293,6 +293,26 @@ def get_post_ids_by_source_ids(conn, source_ids: list[str]) -> dict[str, int]:
         return {row[0]: row[1] for row in cur.fetchall()}
 
 
+def get_authors_with_multiple_posts(conn) -> list[str]:
+    """
+    Return authors who have 2+ posts, excluding [deleted]/[removed]/AutoModerator/null.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT author
+            FROM posts
+            WHERE author IS NOT NULL
+              AND author != ''
+              AND author NOT IN ('[deleted]', '[removed]', 'AutoModerator')
+            GROUP BY author
+            HAVING COUNT(*) >= 2
+            ORDER BY author
+            """
+        )
+        return [row[0] for row in cur.fetchall()]
+
+
 def load_demographic_value_ids(conn) -> dict[tuple[str, str], int]:
     """
     Returns {(dimension_name, value): demographic_value_id} from lookup tables.
