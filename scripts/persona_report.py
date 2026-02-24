@@ -16,20 +16,17 @@ Env vars: PG_HOST / PG_USER / PG_DB / PG_PASSWORD
 import argparse
 import os
 import sys
-import math
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.db import get_conn, get_posts_with_embeddings
-from src.persona import select_personas, _cosine_similarity
+from src.db import get_conn
+from personas import select_personas, avg_pairwise_distance
 
 
-def avg_pairwise_distance(cards) -> float:
-    """Average cosine distance between all persona pairs. Higher = more diverse."""
-    if len(cards) < 2:
-        return 0.0
-    from src.db import get_posts_with_embeddings
-    # Re-fetch embeddings for the selected cards
+def _fetch_embeddings_for_cards(cards) -> list[list[float]]:
+    """Re-fetch embeddings from DB for the given PersonaCards."""
+    if not cards:
+        return []
     conn = get_conn()
     post_ids = [c.post_id for c in cards]
     with conn.cursor() as cur:
@@ -39,19 +36,7 @@ def avg_pairwise_distance(cards) -> float:
         )
         emb_map = {row[0]: list(row[1]) for row in cur.fetchall()}
     conn.close()
-
-    embeddings = [emb_map[c.post_id] for c in cards if c.post_id in emb_map]
-    if len(embeddings) < 2:
-        return 0.0
-
-    total, count = 0.0, 0
-    for i in range(len(embeddings)):
-        for j in range(i + 1, len(embeddings)):
-            sim = _cosine_similarity(embeddings[i], embeddings[j])
-            total += 1 - sim  # distance = 1 - cosine_similarity
-            count += 1
-
-    return total / count if count > 0 else 0.0
+    return [emb_map[c.post_id] for c in cards if c.post_id in emb_map]
 
 
 def main():
@@ -116,7 +101,7 @@ def main():
         print(f"    Excerpt: {card.text_excerpt[:300]!r}")
         print()
 
-    avg_dist = avg_pairwise_distance(cards)
+    avg_dist = avg_pairwise_distance(_fetch_embeddings_for_cards(cards))
     print(f"{'='*60}")
     print(f"  Avg pairwise cosine distance: {avg_dist:.4f}  (target > 0.3)")
     print(f"  Total personas returned: {len(cards)}")

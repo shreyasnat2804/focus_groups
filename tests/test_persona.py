@@ -14,7 +14,8 @@ import math
 import pytest
 from unittest.mock import MagicMock, patch
 
-from src.persona import mmr_select, PersonaCard
+from personas.mmr import mmr_select
+from personas.cards import PersonaCard
 
 
 # --- MMR unit tests (no DB needed) ---
