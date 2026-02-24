@@ -6,9 +6,14 @@ Run with: uvicorn focus_groups.api:app --reload
 
 from __future__ import annotations
 
+from io import BytesIO
+
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from focus_groups.export import export_csv, export_pdf
 from focus_groups.personas.selection import select_personas
 from focus_groups.claude import get_client, run_focus_group
 from focus_groups.db import get_conn
@@ -22,6 +27,14 @@ from focus_groups.sessions import (
 )
 
 app = FastAPI(title="Focus Groups API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -113,3 +126,43 @@ def list_sessions_endpoint(limit: int = Query(default=20, ge=1, le=100)):
         conn.close()
 
     return sessions
+
+
+@app.get("/sessions/{session_id}/export/csv")
+def export_csv_endpoint(session_id: int):
+    """Export a session as CSV."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+    finally:
+        conn.close()
+
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    csv_text = export_csv(session)
+    return StreamingResponse(
+        iter([csv_text]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.csv"},
+    )
+
+
+@app.get("/sessions/{session_id}/export/pdf")
+def export_pdf_endpoint(session_id: int):
+    """Export a session as PDF."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+    finally:
+        conn.close()
+
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    pdf_bytes = export_pdf(session)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.pdf"},
+    )
