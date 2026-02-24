@@ -7,7 +7,7 @@ Controlled by env vars:
   EMBEDDING_DIM      = 384                   (768 for Vertex AI)
 
 Usage:
-    from src.embeddings import embed
+    from focus_groups.embeddings import embed
     vectors = embed(["text one", "text two"])   # list[list[float]]
 """
 

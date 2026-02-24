@@ -35,7 +35,7 @@ else
     echo "Docker not found — assuming native Postgres is running."
 fi
 # Fail fast if DB is unreachable
-$PYTHON -c "from src.db import get_conn; get_conn().close(); print('DB connection OK')"
+$PYTHON -c "from focus_groups.db import get_conn; get_conn().close(); print('DB connection OK')"
 echo
 
 # 3. Apply unique index migration
@@ -69,4 +69,4 @@ fi
 echo
 echo "=== Stage 1 complete ==="
 echo "Run the scraper (probe) to confirm inline tagging works:"
-echo "  $PYTHON -m src.scraper probe"
+echo "  $PYTHON -m focus_groups.scraper probe"

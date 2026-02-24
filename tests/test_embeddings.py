@@ -19,7 +19,7 @@ os.environ.setdefault("EMBEDDING_PROVIDER", "local")
 os.environ.setdefault("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 os.environ.setdefault("EMBEDDING_DIM", "384")
 
-from src.embeddings import embed, EMBEDDING_DIM
+from focus_groups.embeddings import embed, EMBEDDING_DIM
 
 
 def l2_norm(vec: list[float]) -> float:

@@ -4,7 +4,7 @@ Diversity metric for a set of embeddings.
 
 from __future__ import annotations
 
-from personas.mmr import _cosine_similarity
+from focus_groups.personas.mmr import _cosine_similarity
 
 
 def avg_pairwise_distance(embeddings: list[list[float]]) -> float:

@@ -1,7 +1,7 @@
 """
 FastAPI backend for focus group sessions.
 
-Run with: uvicorn src.api:app --reload
+Run with: uvicorn focus_groups.api:app --reload
 """
 
 from __future__ import annotations
@@ -9,10 +9,10 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
-from personas.selection import select_personas
-from src.claude import get_client, run_focus_group
-from src.db import get_conn
-from src.sessions import (
+from focus_groups.personas.selection import select_personas
+from focus_groups.claude import get_client, run_focus_group
+from focus_groups.db import get_conn
+from focus_groups.sessions import (
     create_session,
     save_responses,
     complete_session,

@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from personas.cards import PersonaCard
-from src.claude import (
+from focus_groups.personas.cards import PersonaCard
+from focus_groups.claude import (
     MODEL,
     build_system_prompt,
     generate_persona_response,
@@ -60,7 +60,7 @@ def sample_cards():
 
 # ── get_client ────────────────────────────────────────────────────────────────
 
-@patch("src.claude.anthropic")
+@patch("focus_groups.claude.anthropic")
 def test_get_client_returns_anthropic_instance(mock_anthropic):
     """get_client() should instantiate anthropic.Anthropic."""
     mock_anthropic.Anthropic.return_value = MagicMock()

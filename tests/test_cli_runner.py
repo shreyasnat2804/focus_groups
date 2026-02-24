@@ -9,7 +9,7 @@ from io import StringIO
 
 import pytest
 
-from personas.cards import PersonaCard
+from focus_groups.personas.cards import PersonaCard
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -54,18 +54,18 @@ def sample_responses():
 
 # ── run_pipeline ──────────────────────────────────────────────────────────────
 
-@patch("src.cli_runner.get_conn")
-@patch("src.cli_runner.get_client")
-@patch("src.cli_runner.select_personas")
-@patch("src.cli_runner.run_focus_group")
-@patch("src.cli_runner.create_session")
-@patch("src.cli_runner.save_responses")
-@patch("src.cli_runner.complete_session")
+@patch("focus_groups.cli_runner.get_conn")
+@patch("focus_groups.cli_runner.get_client")
+@patch("focus_groups.cli_runner.select_personas")
+@patch("focus_groups.cli_runner.run_focus_group")
+@patch("focus_groups.cli_runner.create_session")
+@patch("focus_groups.cli_runner.save_responses")
+@patch("focus_groups.cli_runner.complete_session")
 def test_run_pipeline_full(
     mock_complete, mock_save, mock_create, mock_run, mock_select,
     mock_get_client, mock_get_conn, sample_cards, sample_responses
 ):
-    from src.cli_runner import run_pipeline
+    from focus_groups.cli_runner import run_pipeline
 
     mock_get_conn.return_value = MagicMock()
     mock_get_client.return_value = MagicMock()
@@ -96,18 +96,18 @@ def test_run_pipeline_full(
     mock_complete.assert_called_once()
 
 
-@patch("src.cli_runner.get_conn")
-@patch("src.cli_runner.get_client")
-@patch("src.cli_runner.select_personas")
-@patch("src.cli_runner.run_focus_group")
-@patch("src.cli_runner.create_session")
-@patch("src.cli_runner.save_responses")
-@patch("src.cli_runner.complete_session")
+@patch("focus_groups.cli_runner.get_conn")
+@patch("focus_groups.cli_runner.get_client")
+@patch("focus_groups.cli_runner.select_personas")
+@patch("focus_groups.cli_runner.run_focus_group")
+@patch("focus_groups.cli_runner.create_session")
+@patch("focus_groups.cli_runner.save_responses")
+@patch("focus_groups.cli_runner.complete_session")
 def test_run_pipeline_no_save(
     mock_complete, mock_save, mock_create, mock_run, mock_select,
     mock_get_client, mock_get_conn, sample_cards, sample_responses
 ):
-    from src.cli_runner import run_pipeline
+    from focus_groups.cli_runner import run_pipeline
 
     mock_get_conn.return_value = MagicMock()
     mock_get_client.return_value = MagicMock()
@@ -131,13 +131,13 @@ def test_run_pipeline_no_save(
     assert "25-34 year old male" in text
 
 
-@patch("src.cli_runner.get_conn")
-@patch("src.cli_runner.get_client")
-@patch("src.cli_runner.select_personas")
+@patch("focus_groups.cli_runner.get_conn")
+@patch("focus_groups.cli_runner.get_client")
+@patch("focus_groups.cli_runner.select_personas")
 def test_run_pipeline_no_personas(
     mock_select, mock_get_client, mock_get_conn
 ):
-    from src.cli_runner import run_pipeline
+    from focus_groups.cli_runner import run_pipeline
 
     mock_get_conn.return_value = MagicMock()
     mock_select.return_value = []
@@ -158,7 +158,7 @@ def test_run_pipeline_no_personas(
 # ── parse_args ────────────────────────────────────────────────────────────────
 
 def test_parse_args_required():
-    from src.cli_runner import parse_args
+    from focus_groups.cli_runner import parse_args
 
     args = parse_args(["--question", "Test?", "--num-personas", "3"])
     assert args.question == "Test?"
@@ -168,7 +168,7 @@ def test_parse_args_required():
 
 
 def test_parse_args_all_options():
-    from src.cli_runner import parse_args
+    from focus_groups.cli_runner import parse_args
 
     args = parse_args([
         "--question", "Test?",
@@ -181,7 +181,7 @@ def test_parse_args_all_options():
 
 
 def test_parse_args_missing_question():
-    from src.cli_runner import parse_args
+    from focus_groups.cli_runner import parse_args
 
     with pytest.raises(SystemExit):
         parse_args(["--num-personas", "3"])

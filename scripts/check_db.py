@@ -1,9 +1,7 @@
 """Quick DB health check — run from project root."""
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from db import get_conn
+from focus_groups.db import get_conn
 
 try:
     conn = get_conn()

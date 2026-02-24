@@ -4,9 +4,9 @@ Public API for persona selection.
 
 from __future__ import annotations
 
-from personas.cards import PersonaCard
-from personas.mmr import mmr_select
-from src.db import get_posts_with_embeddings
+from focus_groups.personas.cards import PersonaCard
+from focus_groups.personas.mmr import mmr_select
+from focus_groups.db import get_posts_with_embeddings
 
 
 def select_personas(

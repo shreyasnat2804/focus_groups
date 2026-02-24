@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import anthropic
 
-from personas.cards import PersonaCard
-from personas.profiles import build_system_prompt, format_demographic_summary
+from focus_groups.personas.cards import PersonaCard
+from focus_groups.personas.profiles import build_system_prompt, format_demographic_summary
 
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1024

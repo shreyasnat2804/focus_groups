@@ -6,16 +6,12 @@ Set env vars to override defaults:
     PG_HOST, PG_PORT, PG_DB, PG_USER, PG_PASSWORD
 """
 
-import sys
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.db import get_conn, insert_posts, get_post_ids_by_source_ids, insert_tags, _sanitize_text
+from focus_groups.db import get_conn, insert_posts, get_post_ids_by_source_ids, insert_tags, _sanitize_text
 
 
 @pytest.fixture(scope="module")

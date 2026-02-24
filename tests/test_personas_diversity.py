@@ -12,7 +12,7 @@ What we expect:
 
 import math
 import pytest
-from personas.diversity import avg_pairwise_distance
+from focus_groups.personas.diversity import avg_pairwise_distance
 
 
 def test_identical_vectors_distance_zero():

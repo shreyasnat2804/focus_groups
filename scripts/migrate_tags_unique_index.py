@@ -9,12 +9,8 @@ Usage:
 """
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.db import get_conn
+from focus_groups.db import get_conn
 
 SQL = """
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tags_unique

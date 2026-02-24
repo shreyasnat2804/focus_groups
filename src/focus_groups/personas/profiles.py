@@ -6,7 +6,7 @@ No DB dependency — pure string formatting.
 
 from __future__ import annotations
 
-from personas.cards import PersonaCard
+from focus_groups.personas.cards import PersonaCard
 
 
 def format_demographic_summary(tags: dict) -> str:

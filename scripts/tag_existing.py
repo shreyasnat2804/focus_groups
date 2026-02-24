@@ -8,13 +8,9 @@ Usage:
 """
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.db import get_conn, insert_tags
-from src.tagger import tag_post
+from focus_groups.db import get_conn, insert_tags
+from focus_groups.tagger import tag_post
 
 BATCH_SIZE = 500
 

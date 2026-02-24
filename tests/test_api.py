@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from personas.cards import PersonaCard
+from focus_groups.personas.cards import PersonaCard
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -57,16 +57,16 @@ def sample_responses():
 def mock_deps(sample_cards, sample_responses):
     """Patch all external dependencies and return the FastAPI test client."""
     with (
-        patch("src.api.get_conn") as mock_get_conn,
-        patch("src.api.get_client") as mock_get_client,
-        patch("src.api.select_personas") as mock_select,
-        patch("src.api.run_focus_group") as mock_run,
-        patch("src.api.create_session") as mock_create,
-        patch("src.api.save_responses") as mock_save,
-        patch("src.api.complete_session") as mock_complete,
-        patch("src.api.fail_session") as mock_fail,
-        patch("src.api.get_session") as mock_get_session,
-        patch("src.api.list_sessions") as mock_list,
+        patch("focus_groups.api.get_conn") as mock_get_conn,
+        patch("focus_groups.api.get_client") as mock_get_client,
+        patch("focus_groups.api.select_personas") as mock_select,
+        patch("focus_groups.api.run_focus_group") as mock_run,
+        patch("focus_groups.api.create_session") as mock_create,
+        patch("focus_groups.api.save_responses") as mock_save,
+        patch("focus_groups.api.complete_session") as mock_complete,
+        patch("focus_groups.api.fail_session") as mock_fail,
+        patch("focus_groups.api.get_session") as mock_get_session,
+        patch("focus_groups.api.list_sessions") as mock_list,
     ):
         mock_get_conn.return_value = MagicMock()
         mock_get_client.return_value = MagicMock()
@@ -75,7 +75,7 @@ def mock_deps(sample_cards, sample_responses):
         mock_create.return_value = 1
         mock_save.return_value = 2
 
-        from src.api import app
+        from focus_groups.api import app
         client = TestClient(app)
 
         yield {

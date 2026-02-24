@@ -2,7 +2,7 @@
 CLI runner for focus group sessions.
 
 Usage:
-    python -m src.cli_runner \
+    python -m focus_groups.cli_runner \
         --question "What do you think about AI in hiring?" \
         --sector tech --num-personas 5
 
@@ -15,10 +15,10 @@ import argparse
 import sys
 from io import StringIO
 
-from personas.selection import select_personas
-from src.claude import get_client, run_focus_group
-from src.db import get_conn
-from src.sessions import create_session, save_responses, complete_session, fail_session
+from focus_groups.personas.selection import select_personas
+from focus_groups.claude import get_client, run_focus_group
+from focus_groups.db import get_conn
+from focus_groups.sessions import create_session, save_responses, complete_session, fail_session
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

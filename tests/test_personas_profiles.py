@@ -14,8 +14,8 @@ What we expect:
 """
 
 import pytest
-from personas.cards import PersonaCard
-from personas.profiles import build_system_prompt, format_demographic_summary
+from focus_groups.personas.cards import PersonaCard
+from focus_groups.personas.profiles import build_system_prompt, format_demographic_summary
 
 
 # --- format_demographic_summary ---

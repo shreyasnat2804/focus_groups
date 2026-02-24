@@ -1,10 +1,8 @@
 """Load existing data/posts.jsonl into Postgres. Safe to re-run (ON CONFLICT DO NOTHING)."""
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from db import get_conn, insert_posts
+from focus_groups.db import get_conn, insert_posts
 
 JSONL = Path(__file__).parent.parent / "data" / "posts.jsonl"
 

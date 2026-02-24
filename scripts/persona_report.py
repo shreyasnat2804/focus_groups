@@ -14,13 +14,9 @@ Env vars: PG_HOST / PG_USER / PG_DB / PG_PASSWORD
 """
 
 import argparse
-import os
-import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from src.db import get_conn
-from personas import select_personas, avg_pairwise_distance
+from focus_groups.db import get_conn
+from focus_groups.personas import select_personas, avg_pairwise_distance
 
 
 def _fetch_embeddings_for_cards(cards) -> list[list[float]]:

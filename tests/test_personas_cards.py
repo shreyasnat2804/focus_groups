@@ -10,7 +10,7 @@ What we expect:
 """
 
 import pytest
-from personas.cards import PersonaCard
+from focus_groups.personas.cards import PersonaCard
 
 
 def test_persona_card_all_fields():

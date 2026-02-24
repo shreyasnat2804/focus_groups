@@ -13,7 +13,7 @@ What we expect:
 
 import math
 import pytest
-from personas.mmr import mmr_select, _cosine_similarity
+from focus_groups.personas.mmr import mmr_select, _cosine_similarity
 
 
 def make_vecs(n: int, dim: int = 4) -> list[list[float]]:

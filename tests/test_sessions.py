@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from src.sessions import (
+from focus_groups.sessions import (
     create_session,
     save_responses,
     complete_session,

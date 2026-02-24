@@ -17,21 +17,16 @@ Env vars:
 """
 
 import argparse
-import os
-import sys
 import time
 
-# Allow running from repo root
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from src.db import (
+from focus_groups.db import (
     get_conn,
     get_embedding_model_id,
     get_unembedded_posts,
     insert_embeddings,
     create_ivfflat_index,
 )
-from src.embeddings import embed, EMBEDDING_MODEL
+from focus_groups.embeddings import embed, EMBEDDING_MODEL
 
 
 def count_unembedded(conn) -> int:

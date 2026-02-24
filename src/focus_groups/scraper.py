@@ -15,7 +15,7 @@ from pathlib import Path
 
 import requests
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 OUTPUT_FILE = DATA_DIR / "posts.jsonl"
 
 MIN_SCORE = 5
@@ -243,15 +243,7 @@ def iter_subreddit(
 def _try_get_db_conn():
     """Return a DB connection if Postgres is reachable, else None."""
     try:
-        from src.db import get_conn
-        conn = get_conn()
-        return conn
-    except Exception:
-        pass
-    try:
-        # Allow running from project root without package install
-        sys.path.insert(0, str(Path(__file__).parent))
-        from db import get_conn  # type: ignore
+        from focus_groups.db import get_conn
         conn = get_conn()
         return conn
     except Exception as exc:
@@ -288,14 +280,14 @@ def run(
         print("No DB — writing to JSONL only")
 
     try:
-        from db import insert_posts, get_post_ids_by_source_ids, insert_tags  # type: ignore
+        from focus_groups.db import insert_posts, get_post_ids_by_source_ids, insert_tags
     except ImportError:
         insert_posts = None
         get_post_ids_by_source_ids = None
         insert_tags = None
 
     try:
-        from tagger import tag_post  # type: ignore
+        from focus_groups.tagger import tag_post
     except ImportError:
         tag_post = None
 

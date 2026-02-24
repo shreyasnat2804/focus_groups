@@ -1,8 +1,5 @@
 """Quick summary of what's in the DB."""
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from db import get_conn
+from focus_groups.db import get_conn
 
 conn = get_conn()
 with conn.cursor() as cur:
