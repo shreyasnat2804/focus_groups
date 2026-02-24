@@ -307,14 +307,123 @@ The abstraction held: local and cloud are the same system, just different connec
 
 ---
 
+## Stage 2.5: `personas/` Library Refactor
+
+Stage 2 shipped persona logic scattered across `src/persona.py`, `src/embeddings.py`, and `src/db.py`, with a CLI helper in `scripts/persona_report.py`. Before Stage 3 (FastAPI backend) can import persona functionality cleanly, we reorganized it into a proper Python package and added the prompt formatting layer that Stage 3 needs.
+
+### What Changed
+
+The monolithic `src/persona.py` was split into focused modules:
+
+```
+personas/
+  __init__.py      # public exports (6 symbols)
+  cards.py         # PersonaCard dataclass only
+  mmr.py           # _cosine_similarity(), mmr_select() — pure math, no DB
+  selection.py     # select_personas() — the main public API, imports from src/db
+  diversity.py     # avg_pairwise_distance() — pure function on embedding vectors
+  profiles.py      # build_system_prompt(), format_demographic_summary()  [NEW]
+```
+
+### Why the Split
+
+- **`cards.py`** — the dataclass was tangled with algorithm code. Now anything can import `PersonaCard` without pulling in DB dependencies.
+- **`mmr.py`** — pure math. Testable without Postgres. Reusable outside persona selection (e.g., if we ever diversify training examples for LoRA).
+- **`selection.py`** — the one module that touches the DB. Imports from `src.db` and calls `mmr_select()`.
+- **`diversity.py`** — previously lived in `scripts/persona_report.py` and did its own DB fetch. Now it's a pure function: pass in a list of embedding vectors, get back the average pairwise cosine distance. The script handles the DB fetch separately.
+- **`profiles.py`** — entirely new. This is the bridge to Stage 3.
+
+### New: `profiles.py`
+
+Two functions that format `PersonaCard`s into Claude API system prompts:
+
+**`format_demographic_summary(tags)`** converts a tag dict into a human-readable string:
+```python
+format_demographic_summary({"age_group": "25-34", "gender": "male", "income_bracket": "high_income"})
+# → "25-34 year old male, high income"
+```
+
+**`build_system_prompt(card)`** produces a complete system prompt:
+```
+You are simulating a real person with the following profile:
+Demographics: 25-34 year old male, high income, tech sector
+
+Here is an example of how this person communicates:
+"I think the biggest issue with AI regulation is that lawmakers don't understand..."
+
+Respond authentically as this person would, matching their tone, vocabulary, and perspective. Do not break character.
+```
+
+This is what Stage 3's FastAPI backend will pass as the `system` parameter to Claude. No DB dependency — it takes a `PersonaCard` and returns a string.
+
+### Import Changes
+
+Old (Stage 2):
+```python
+from src.persona import select_personas, PersonaCard, mmr_select
+```
+
+New:
+```python
+from personas import select_personas, PersonaCard, mmr_select
+from personas import build_system_prompt, format_demographic_summary
+from personas import avg_pairwise_distance
+```
+
+`src/persona.py` still exists as a deprecation stub — it re-exports everything from `personas.*` and emits a `DeprecationWarning` on import. It will be deleted once all scripts are migrated.
+
+### Test Results
+
+36 new tests across 4 test files, plus the 7 existing tests updated to import from `personas.*`:
+
+```
+tests/test_personas_cards.py       7 passed   (dataclass fields, repr, long excerpts)
+tests/test_personas_mmr.py        10 passed   (cosine sim, MMR correctness, lambda=0 diversity)
+tests/test_personas_diversity.py   7 passed   (known vectors: orthogonal, identical, opposite)
+tests/test_personas_profiles.py   12 passed   (summary formatting, prompt structure, edge cases)
+tests/test_persona.py              7 passed   (original tests, now importing from personas.*)
+```
+
+Full suite: **97 tests, all passing.**
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `personas/__init__.py` | New — public API exports |
+| `personas/cards.py` | New — `PersonaCard` moved from `src/persona.py` |
+| `personas/mmr.py` | New — MMR logic moved from `src/persona.py` |
+| `personas/selection.py` | New — `select_personas()` moved from `src/persona.py` |
+| `personas/diversity.py` | New — `avg_pairwise_distance()` extracted from `scripts/persona_report.py`, made pure |
+| `personas/profiles.py` | New — `build_system_prompt()`, `format_demographic_summary()` |
+| `scripts/persona_report.py` | Updated imports to use `personas` package |
+| `tests/test_persona.py` | Updated imports to use `personas.*` |
+| `src/persona.py` | Replaced with deprecation stub |
+
+### Files Left Untouched
+
+- `src/db.py` — still the DB layer; `selection.py` imports from it
+- `src/embeddings.py` — unchanged
+- `scripts/generate_embeddings.py` — no persona imports
+
+---
+
 ## What's Next — Stage 3
 
 Stage 3 is the actual product:
 
 - **FastAPI backend** on Cloud Run — `/sessions`, `/personas`, `/respond` endpoints
 - **React frontend** on Cloud Run — focus group creation UI
-- **Claude API** for generating persona responses (conditioned on demographic profile + representative post text)
+- **Claude API** for generating persona responses — uses `build_system_prompt()` from `personas.profiles` to ground each Claude call in a persona's voice
 - **Session management** — create a focus group, specify criteria, get back responses from 20–50 AI personas
 - **Export** — PDF/CSV of session results
 
-The persona cards built in Stage 2 become the context fed to Claude: each persona's demographic tags + text excerpt become a system prompt grounding Claude's response in a real person's voice and concerns.
+The `personas` package is now a clean import for the backend:
+```python
+from personas import select_personas, build_system_prompt
+
+cards = select_personas(conn, sector="tech", n=20)
+for card in cards:
+    system_prompt = build_system_prompt(card)
+    # Pass to Claude API as system message
+```
