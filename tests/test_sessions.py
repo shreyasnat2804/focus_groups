@@ -16,6 +16,7 @@ from focus_groups.sessions import (
     fail_session,
     get_session,
     list_sessions,
+    count_sessions,
 )
 
 
@@ -195,3 +196,51 @@ def test_list_sessions_empty():
     result = list_sessions(conn, limit=10)
 
     assert result == []
+
+
+# ── list_sessions pagination ─────────────────────────────────────────────────
+
+def test_list_sessions_with_offset():
+    now = datetime.now(timezone.utc)
+    rows = [
+        ("c3d4e5f6-a7b8-9012-cdef-123456789012", "political", "Third?", 2, "pending", now),
+    ]
+    conn, cursor = _make_conn(fetchall=rows)
+
+    result = list_sessions(conn, limit=10, offset=2)
+
+    assert len(result) == 1
+    sql = cursor.execute.call_args[0][0]
+    assert "OFFSET" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == (10, 2)
+
+
+def test_list_sessions_orders_by_created_at():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "ORDER BY created_at DESC" in sql
+    assert "ORDER BY id" not in sql
+
+
+def test_list_sessions_default_offset_zero():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=5)
+
+    params = cursor.execute.call_args[0][1]
+    assert params == (5, 0)
+
+
+def test_list_sessions_count():
+    conn, cursor = _make_conn(fetchall=[])
+    cursor.fetchone.return_value = (42,)
+
+    total = count_sessions(conn)
+
+    assert total == 42
+    sql = cursor.execute.call_args[0][0]
+    assert "COUNT" in sql

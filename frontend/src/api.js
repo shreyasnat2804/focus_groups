@@ -25,8 +25,8 @@ export async function getSession(id) {
   return resp.json();
 }
 
-export async function listSessions(limit = 20) {
-  const resp = await fetch(`${BASE}?limit=${limit}`);
+export async function listSessions({ limit = 10, offset = 0 } = {}) {
+  const resp = await fetch(`${BASE}?limit=${limit}&offset=${offset}`);
   if (!resp.ok) throw new Error("Failed to fetch sessions");
   return resp.json();
 }

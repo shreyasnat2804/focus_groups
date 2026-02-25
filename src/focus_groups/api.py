@@ -21,6 +21,7 @@ from focus_groups.personas.selection import select_personas
 from focus_groups.claude import get_client, run_focus_group
 from focus_groups.db import get_conn
 from focus_groups.sessions import (
+    count_sessions,
     create_session,
     save_responses,
     complete_session,
@@ -122,15 +123,27 @@ def get_session_endpoint(session_id: str):
 
 
 @app.get("/sessions")
-def list_sessions_endpoint(limit: int = Query(default=20, ge=1, le=100)):
-    """List recent sessions."""
+def list_sessions_endpoint(
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    """List recent sessions with pagination."""
     conn = get_conn()
     try:
-        sessions = list_sessions(conn, limit=limit)
+        total = count_sessions(conn)
+        if offset >= total and total > 0:
+            offset = max(0, (total - 1) // limit * limit)
+        sessions = list_sessions(conn, limit=limit, offset=offset)
     finally:
         conn.close()
 
-    return sessions
+    return {
+        "items": sessions,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + limit < total,
+    }
 
 
 @app.get("/sessions/{session_id}/export/csv")
