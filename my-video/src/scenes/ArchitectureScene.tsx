@@ -12,13 +12,27 @@ const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
 });
 
-const pipelineSteps = [
-  { label: "Reddit", color: "#ff4500", icon: "\u{1F4E1}" },
-  { label: "Tagging", color: "#8b5cf6", icon: "\u{1F3F7}\uFE0F" },
-  { label: "Embeddings", color: "#06b6d4", icon: "\u{1F9E0}" },
-  { label: "LoRA", color: "#f59e0b", icon: "\u{2699}\uFE0F" },
-  { label: "API", color: "#22c55e", icon: "\u{1F310}" },
-  { label: "Frontend", color: "#228be6", icon: "\u{1F5A5}\uFE0F" },
+const steps = [
+  {
+    label: "Real Opinions",
+    desc: "We collect millions of real\nviews from online communities",
+    color: "#ff4500",
+  },
+  {
+    label: "Demographic Profiles",
+    desc: "Each opinion is tagged by\nage, location, and interests",
+    color: "#8b5cf6",
+  },
+  {
+    label: "Fine-Tuned Models",
+    desc: "Sector-specific AI trained\non this real-world data",
+    color: "#f59e0b",
+  },
+  {
+    label: "Your Focus Group",
+    desc: "Personas that respond like\nreal people — because they\nlearned from real people",
+    color: "#228be6",
+  },
 ];
 
 export const ArchitectureScene: React.FC = () => {
@@ -36,7 +50,7 @@ export const ArchitectureScene: React.FC = () => {
       style={{
         background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
         fontFamily,
-        gap: 40,
+        gap: 36,
       }}
     >
       <div
@@ -45,13 +59,26 @@ export const ArchitectureScene: React.FC = () => {
           fontSize: 32,
           fontWeight: 700,
           color: "white",
+          textAlign: "center",
         }}
       >
-        How It Works
+        Not a GPT wrapper.{" "}
+        <span style={{ color: "#228be6" }}>Trained on real data.</span>
       </div>
-      <div className="flex items-center" style={{ gap: 8 }}>
-        {pipelineSteps.map((step, i) => {
-          const delay = 10 + i * 15;
+      <div
+        style={{
+          opacity: headingOpacity,
+          fontSize: 16,
+          color: "#94a3b8",
+          marginTop: -20,
+          textAlign: "center",
+        }}
+      >
+        Our models learn from actual human opinions — not generic prompts
+      </div>
+      <div className="flex items-start" style={{ gap: 12 }}>
+        {steps.map((step, i) => {
+          const delay = 15 + i * 20;
           const nodeScale = spring({
             frame: frame - delay,
             fps,
@@ -62,75 +89,73 @@ export const ArchitectureScene: React.FC = () => {
             extrapolateRight: "clamp",
           });
 
-          // Arrow appears after the node
           const arrowOpacity =
-            i < pipelineSteps.length - 1
-              ? interpolate(frame - delay - 8, [0, 10], [0, 1], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                })
-              : 0;
-
-          const arrowWidth =
-            i < pipelineSteps.length - 1
-              ? interpolate(frame - delay - 8, [0, 10], [0, 32], {
+            i < steps.length - 1
+              ? interpolate(frame - delay - 10, [0, 10], [0, 1], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 })
               : 0;
 
           return (
-            <div key={i} className="flex items-center" style={{ gap: 8 }}>
+            <div key={i} className="flex items-center" style={{ gap: 12 }}>
               <div
                 className="flex flex-col items-center"
                 style={{
                   transform: `scale(${nodeScale})`,
                   opacity: nodeOpacity,
+                  width: 190,
                 }}
               >
                 <div
-                  className="flex items-center justify-center"
                   style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 16,
-                    backgroundColor: step.color + "20",
-                    border: `2px solid ${step.color}`,
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: step.color,
+                    marginBottom: 12,
                   }}
-                >
-                  <span style={{ fontSize: 28 }}>{step.icon}</span>
-                </div>
+                />
                 <div
                   style={{
-                    fontSize: 12,
-                    color: "#cbd5e1",
-                    marginTop: 8,
-                    fontWeight: 600,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "white",
+                    textAlign: "center",
+                    marginBottom: 8,
                   }}
                 >
                   {step.label}
                 </div>
-              </div>
-              {i < pipelineSteps.length - 1 && (
                 <div
                   style={{
-                    opacity: arrowOpacity,
-                    overflow: "hidden",
-                    marginBottom: 20,
+                    fontSize: 12,
+                    color: "#94a3b8",
+                    textAlign: "center",
+                    lineHeight: 1.5,
+                    whiteSpace: "pre-line",
                   }}
                 >
-                  <svg width={arrowWidth} height={16} viewBox="0 0 32 16">
-                    <line
-                      x1="0"
-                      y1="8"
-                      x2="24"
-                      y2="8"
-                      stroke="#475569"
-                      strokeWidth="2"
-                    />
-                    <polygon points="24,3 32,8 24,13" fill="#475569" />
-                  </svg>
+                  {step.desc}
                 </div>
+              </div>
+              {i < steps.length - 1 && (
+                <svg
+                  width={20}
+                  height={16}
+                  viewBox="0 0 20 16"
+                  style={{ opacity: arrowOpacity, marginBottom: 30 }}
+                >
+                  <line
+                    x1="0"
+                    y1="8"
+                    x2="14"
+                    y2="8"
+                    stroke="#475569"
+                    strokeWidth="2"
+                  />
+                  <polygon points="14,3 20,8 14,13" fill="#475569" />
+                </svg>
               )}
             </div>
           );

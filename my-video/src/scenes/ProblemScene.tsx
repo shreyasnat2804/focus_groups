@@ -13,9 +13,9 @@ const { fontFamily } = loadFont("normal", {
 });
 
 const problems = [
-  { icon: "\u{1F4B0}", text: "Expensive", sub: "$5,000 - $10,000 per session" },
-  { icon: "\u{23F3}", text: "Slow", sub: "Weeks to recruit & schedule" },
-  { icon: "\u{1F4C9}", text: "Hard to Scale", sub: "Limited sample sizes" },
+  { symbol: "$", text: "Expensive", sub: "$5,000 - $10,000 per session" },
+  { symbol: "\u231B", text: "Slow", sub: "Weeks to recruit & schedule" },
+  { symbol: "\u2194", text: "Hard to Scale", sub: "Limited sample sizes" },
 ];
 
 export const ProblemScene: React.FC = () => {
@@ -73,7 +73,20 @@ export const ProblemScene: React.FC = () => {
                 border: "1px solid rgba(255,255,255,0.1)",
               }}
             >
-              <div style={{ fontSize: 48 }}>{p.icon}</div>
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: "rgba(248,113,113,0.15)",
+                  fontSize: 24,
+                  color: "#f87171",
+                  fontWeight: 700,
+                }}
+              >
+                {p.symbol}
+              </div>
               <div
                 style={{
                   fontSize: 22,
@@ -85,7 +98,12 @@ export const ProblemScene: React.FC = () => {
                 {p.text}
               </div>
               <div
-                style={{ fontSize: 13, color: "#94a3b8", marginTop: 6, textAlign: "center" }}
+                style={{
+                  fontSize: 13,
+                  color: "#94a3b8",
+                  marginTop: 6,
+                  textAlign: "center",
+                }}
               >
                 {p.sub}
               </div>

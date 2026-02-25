@@ -13,10 +13,10 @@ const { fontFamily } = loadFont("normal", {
 });
 
 const valueProps = [
-  { icon: "\u{26A1}", text: "Results in seconds, not weeks" },
-  { icon: "\u{1F4B8}", text: "Fraction of the cost" },
-  { icon: "\u{1F4CA}", text: "Scale to any sample size" },
-  { icon: "\u{1F3AF}", text: "Demographic-targeted AI personas" },
+  { text: "Instant feedback on any idea" },
+  { text: "Built on real opinions from real people" },
+  { text: "Scale to any audience size" },
+  { text: "Personas grounded in actual demographic data" },
 ];
 
 export const SolutionScene: React.FC = () => {
@@ -51,10 +51,10 @@ export const SolutionScene: React.FC = () => {
           textAlign: "center",
         }}
       >
-        Test your pitch on{" "}
-        <span style={{ color: "#228be6" }}>AI personas</span> in seconds
+        Test your pitch with{" "}
+        <span style={{ color: "#228be6" }}>real audience insights</span>
       </div>
-      <div className="flex flex-col gap-4" style={{ width: 500 }}>
+      <div className="flex flex-col gap-4" style={{ width: 520 }}>
         {valueProps.map((vp, i) => {
           const delay = 20 + i * 10;
           const slideX = spring({
@@ -77,7 +77,26 @@ export const SolutionScene: React.FC = () => {
                 border: "1px solid rgba(255,255,255,0.1)",
               }}
             >
-              <span style={{ fontSize: 24 }}>{vp.icon}</span>
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: "#228be620",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width={14} height={14} viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M2 7L5.5 10.5L12 3.5"
+                    stroke="#228be6"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
               <span style={{ fontSize: 18, color: "#e2e8f0", fontWeight: 600 }}>
                 {vp.text}
               </span>

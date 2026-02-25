@@ -12,15 +12,6 @@ const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
 });
 
-const techBadges = [
-  "FastAPI",
-  "React",
-  "Mistral-7B",
-  "LoRA",
-  "pgvector",
-  "Cloud Run",
-];
-
 export const ClosingScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -36,7 +27,7 @@ export const ClosingScene: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  const badgesOpacity = interpolate(frame, [40, 55], [0, 1], {
+  const subOpacity = interpolate(frame, [40, 55], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -47,7 +38,7 @@ export const ClosingScene: React.FC = () => {
       style={{
         background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)",
         fontFamily,
-        gap: 24,
+        gap: 20,
       }}
     >
       <div
@@ -71,37 +62,20 @@ export const ClosingScene: React.FC = () => {
           color: "#228be6",
         }}
       >
-        Try FocusTest Today
+        Real opinions. Real insights. In seconds.
       </div>
 
       <div
-        className="flex flex-wrap justify-center gap-2"
-        style={{ opacity: badgesOpacity, maxWidth: 500 }}
+        style={{
+          opacity: subOpacity,
+          fontSize: 16,
+          color: "#64748b",
+          textAlign: "center",
+          maxWidth: 400,
+          lineHeight: 1.6,
+        }}
       >
-        {techBadges.map((badge, i) => {
-          const badgeScale = spring({
-            frame: frame - (45 + i * 5),
-            fps,
-            config: { damping: 200 },
-          });
-          return (
-            <div
-              key={badge}
-              style={{
-                transform: `scale(${badgeScale})`,
-                backgroundColor: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 8,
-                padding: "6px 14px",
-                fontSize: 13,
-                color: "#94a3b8",
-                fontWeight: 500,
-              }}
-            >
-              {badge}
-            </div>
-          );
-        })}
+        AI focus groups trained on millions of real human opinions
       </div>
     </AbsoluteFill>
   );

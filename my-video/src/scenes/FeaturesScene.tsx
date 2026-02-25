@@ -13,12 +13,12 @@ const { fontFamily } = loadFont("normal", {
 });
 
 const features = [
-  { icon: "\u{1F50D}", title: "Session Search", desc: "Find past focus groups instantly" },
-  { icon: "\u{1F3AF}", title: "Sector Filter", desc: "Tech, Financial, Political" },
-  { icon: "\u{1F4E4}", title: "Export Results", desc: "Download as CSV or PDF" },
-  { icon: "\u{1F5D1}\uFE0F", title: "Soft Delete", desc: "Recover deleted sessions" },
-  { icon: "\u{1F504}", title: "Rerun Groups", desc: "Iterate on your pitch" },
-  { icon: "\u{1F465}", title: "Custom Personas", desc: "Tune demographic mix" },
+  { title: "Search Sessions", desc: "Find past focus groups instantly" },
+  { title: "Sector Targeting", desc: "Tech, Financial, or Political" },
+  { title: "Export Results", desc: "Download as CSV or PDF" },
+  { title: "Session History", desc: "Recover any deleted session" },
+  { title: "Rerun & Iterate", desc: "Refine your pitch over time" },
+  { title: "Custom Personas", desc: "Tune your audience mix" },
 ];
 
 export const FeaturesScene: React.FC = () => {
@@ -83,13 +83,21 @@ export const FeaturesScene: React.FC = () => {
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 32 }}>{f.icon}</div>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: "#228be615",
+                  border: "1px solid #228be640",
+                  marginBottom: 10,
+                }}
+              />
               <div
                 style={{
                   fontSize: 15,
                   fontWeight: 700,
                   color: "white",
-                  marginTop: 8,
                 }}
               >
                 {f.title}
