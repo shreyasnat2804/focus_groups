@@ -61,6 +61,7 @@ export default function VanWestendorpChart({ curves, pricePoints }) {
             fontSize={12}
           />
           <Tooltip
+            itemSorter={() => 0}
             formatter={(value) => `${value.toFixed(1)}%`}
             labelFormatter={(label) => `$${label}`}
           />
@@ -81,10 +82,10 @@ export default function VanWestendorpChart({ curves, pricePoints }) {
               strokeWidth={1.5}
             />
           )}
-          <Line type="monotone" dataKey="Too Cheap" stroke="#e74c3c" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="Bargain" stroke="#f39c12" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="Expensive" stroke="#3498db" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="Too Expensive" stroke="#8e44ad" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="Too Cheap" stroke="#2b8a3e" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="Bargain" stroke="#82c91e" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="Expensive" stroke="#f39c12" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="Too Expensive" stroke="#e03131" strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
