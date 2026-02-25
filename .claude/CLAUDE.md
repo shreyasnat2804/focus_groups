@@ -57,3 +57,5 @@ Reddit (PRAW) → Postgres (raw posts)
 - Tests in `tests/` directory, named `test_<module>.py`
 - Run with `python3 -m pytest tests/`
 
+# Instructions
+- If you are blocked from performing an action, check if it is allowed in settings.json and take action according to that before considering asking the user.
