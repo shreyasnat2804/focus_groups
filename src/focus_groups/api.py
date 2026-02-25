@@ -30,6 +30,10 @@ from focus_groups.sessions import (
     list_sessions,
     update_session_question,
     delete_responses,
+    soft_delete_session,
+    restore_session,
+    purge_expired_sessions,
+    permanently_delete_session,
 )
 
 app = FastAPI(title="Focus Groups API", version="0.1.0")
@@ -135,14 +139,23 @@ def get_session_endpoint(session_id: str):
 def list_sessions_endpoint(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    search: str | None = Query(default=None),
+    sector: str | None = Query(default=None),
+    deleted: bool = Query(default=False),
 ):
-    """List recent sessions with pagination."""
+    """List recent sessions with pagination, search, and filters."""
     conn = get_conn()
     try:
-        total = count_sessions(conn)
+        # Purge sessions deleted more than 30 days ago
+        purge_expired_sessions(conn)
+
+        total = count_sessions(conn, search=search, sector=sector, deleted=deleted)
         if offset >= total and total > 0:
             offset = max(0, (total - 1) // limit * limit)
-        sessions = list_sessions(conn, limit=limit, offset=offset)
+        sessions = list_sessions(
+            conn, limit=limit, offset=offset,
+            search=search, sector=sector, deleted=deleted,
+        )
     finally:
         conn.close()
 
@@ -153,6 +166,48 @@ def list_sessions_endpoint(
         "offset": offset,
         "has_more": offset + limit < total,
     }
+
+
+@app.delete("/api/sessions/{session_id}")
+def delete_session_endpoint(session_id: str):
+    """Soft delete a session (move to trash)."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found.")
+        soft_delete_session(conn, session_id)
+    finally:
+        conn.close()
+    return {"status": "deleted", "session_id": session_id}
+
+
+@app.post("/api/sessions/{session_id}/restore")
+def restore_session_endpoint(session_id: str):
+    """Restore a soft-deleted session from trash."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found.")
+        restore_session(conn, session_id)
+    finally:
+        conn.close()
+    return {"status": "restored", "session_id": session_id}
+
+
+@app.delete("/api/sessions/{session_id}/permanent")
+def permanently_delete_session_endpoint(session_id: str):
+    """Permanently delete a session (cannot be undone)."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found.")
+        permanently_delete_session(conn, session_id)
+    finally:
+        conn.close()
+    return {"status": "permanently_deleted", "session_id": session_id}
 
 
 @app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)

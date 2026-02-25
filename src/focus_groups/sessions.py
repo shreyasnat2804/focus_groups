@@ -156,18 +156,55 @@ def get_session(conn, session_id: str) -> dict | None:
     }
 
 
-def list_sessions(conn, limit: int = 10, offset: int = 0) -> list[dict]:
-    """Return recent sessions (without responses) ordered by newest first."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT id, sector, question, num_personas, status, created_at
-            FROM focus_group_sessions
-            ORDER BY created_at DESC
-            LIMIT %s OFFSET %s
-            """,
-            (limit, offset),
+def _build_filter_clause(
+    search: str | None = None,
+    sector: str | None = None,
+    deleted: bool = False,
+) -> tuple[str, list]:
+    """Build WHERE clause and params for search/sector/deleted filters."""
+    conditions = []
+    params: list = []
+
+    if deleted:
+        conditions.append(
+            "deleted_at IS NOT NULL AND deleted_at > NOW() - INTERVAL '30 days'"
         )
+    else:
+        conditions.append("deleted_at IS NULL")
+
+    if search:
+        conditions.append("question ILIKE %s")
+        params.append(f"%{search}%")
+
+    if sector:
+        conditions.append("sector = %s")
+        params.append(sector)
+
+    where = " AND ".join(conditions)
+    return where, params
+
+
+def list_sessions(
+    conn,
+    limit: int = 10,
+    offset: int = 0,
+    search: str | None = None,
+    sector: str | None = None,
+    deleted: bool = False,
+) -> list[dict]:
+    """Return recent sessions (without responses) ordered by newest first."""
+    where, params = _build_filter_clause(search=search, sector=sector, deleted=deleted)
+    query = f"""
+        SELECT id, sector, question, num_personas, status, created_at, deleted_at
+        FROM focus_group_sessions
+        WHERE {where}
+        ORDER BY created_at DESC
+        LIMIT %s OFFSET %s
+    """
+    params.extend([limit, offset])
+
+    with conn.cursor() as cur:
+        cur.execute(query, tuple(params))
         rows = cur.fetchall()
 
     return [
@@ -178,15 +215,24 @@ def list_sessions(conn, limit: int = 10, offset: int = 0) -> list[dict]:
             "num_personas": r[3],
             "status": r[4],
             "created_at": r[5],
+            "deleted_at": r[6],
         }
         for r in rows
     ]
 
 
-def count_sessions(conn) -> int:
-    """Return total number of sessions."""
+def count_sessions(
+    conn,
+    search: str | None = None,
+    sector: str | None = None,
+    deleted: bool = False,
+) -> int:
+    """Return total number of sessions matching filters."""
+    where, params = _build_filter_clause(search=search, sector=sector, deleted=deleted)
+    query = f"SELECT COUNT(*) FROM focus_group_sessions WHERE {where}"
+
     with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM focus_group_sessions")
+        cur.execute(query, tuple(params))
         return cur.fetchone()[0]
 
 
@@ -211,6 +257,59 @@ def delete_responses(conn, session_id: str) -> None:
             """
             DELETE FROM focus_group_responses
             WHERE session_id = %s
+            """,
+            (session_id,),
+        )
+    conn.commit()
+
+
+def soft_delete_session(conn, session_id: str) -> None:
+    """Soft delete a session by setting deleted_at to now."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE focus_group_sessions
+            SET deleted_at = NOW()
+            WHERE id = %s
+            """,
+            (session_id,),
+        )
+    conn.commit()
+
+
+def restore_session(conn, session_id: str) -> None:
+    """Restore a soft-deleted session by clearing deleted_at."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE focus_group_sessions
+            SET deleted_at = NULL
+            WHERE id = %s
+            """,
+            (session_id,),
+        )
+    conn.commit()
+
+
+def purge_expired_sessions(conn) -> None:
+    """Permanently delete sessions that were soft-deleted more than 30 days ago."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM focus_group_sessions
+            WHERE deleted_at < NOW() - INTERVAL '30 days'
+            """
+        )
+    conn.commit()
+
+
+def permanently_delete_session(conn, session_id: str) -> None:
+    """Permanently delete a session (hard delete)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM focus_group_sessions
+            WHERE id = %s
             """,
             (session_id,),
         )

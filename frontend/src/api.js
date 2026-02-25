@@ -25,9 +25,31 @@ export async function getSession(id) {
   return resp.json();
 }
 
-export async function listSessions({ limit = 10, offset = 0 } = {}) {
-  const resp = await fetch(`${BASE}?limit=${limit}&offset=${offset}`);
+export async function listSessions({ limit = 10, offset = 0, search, sector, deleted } = {}) {
+  const params = new URLSearchParams({ limit, offset });
+  if (search) params.set("search", search);
+  if (sector) params.set("sector", sector);
+  if (deleted) params.set("deleted", "true");
+  const resp = await fetch(`${BASE}?${params}`);
   if (!resp.ok) throw new Error("Failed to fetch sessions");
+  return resp.json();
+}
+
+export async function deleteSession(id) {
+  const resp = await fetch(`${BASE}/${id}`, { method: "DELETE" });
+  if (!resp.ok) throw new Error("Failed to delete session");
+  return resp.json();
+}
+
+export async function restoreSession(id) {
+  const resp = await fetch(`${BASE}/${id}/restore`, { method: "POST" });
+  if (!resp.ok) throw new Error("Failed to restore session");
+  return resp.json();
+}
+
+export async function permanentlyDeleteSession(id) {
+  const resp = await fetch(`${BASE}/${id}/permanent`, { method: "DELETE" });
+  if (!resp.ok) throw new Error("Failed to permanently delete session");
   return resp.json();
 }
 

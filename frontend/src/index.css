@@ -87,7 +87,64 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+/* --- Search & Filter Bar --- */
+
+.search-filter-bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #228be6;
+  box-shadow: 0 0 0 2px rgba(34, 139, 230, 0.15);
+}
+
+.sector-filter {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+  cursor: pointer;
+}
+
+.deleted-toggle {
+  padding: 0.5rem 0.75rem;
+  background: #f1f3f5;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.deleted-toggle:hover {
+  background: #e9ecef;
+}
+
+.deleted-toggle.active {
+  background: #fff5f5;
+  color: #e03131;
+  border-color: #ffc9c9;
 }
 
 .btn-new-pitch {
@@ -127,6 +184,35 @@ h2 {
   box-shadow: 0 2px 8px rgba(34, 139, 230, 0.1);
 }
 
+.pitch-card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pitch-card-delete {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pitch-card-delete:hover {
+  background: #fff5f5;
+  color: #e03131;
+}
+
 .pitch-card-name {
   font-size: 1rem;
   font-weight: 600;
@@ -160,6 +246,60 @@ h2 {
   color: #868e96;
   margin-top: auto;
   padding-top: 0.75rem;
+}
+
+/* --- Deleted card styling --- */
+
+.pitch-card.deleted {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.pitch-card.deleted:hover {
+  opacity: 0.85;
+}
+
+.days-remaining {
+  color: #e03131;
+  font-weight: 500;
+}
+
+.deleted-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-restore {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  background: #d3f9d8;
+  color: #2b8a3e;
+  border: 1px solid #b2f2bb;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-restore:hover {
+  background: #b2f2bb;
+}
+
+.btn-permanent-delete {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  background: #fff5f5;
+  color: #e03131;
+  border: 1px solid #ffc9c9;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-permanent-delete:hover {
+  background: #ffe3e3;
 }
 
 .status-badge {

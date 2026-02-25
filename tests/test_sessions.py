@@ -19,6 +19,10 @@ from focus_groups.sessions import (
     count_sessions,
     update_session_question,
     delete_responses,
+    soft_delete_session,
+    restore_session,
+    purge_expired_sessions,
+    permanently_delete_session,
 )
 
 
@@ -180,8 +184,8 @@ def test_get_session_not_found():
 def test_list_sessions_returns_list():
     now = datetime.now(timezone.utc)
     rows = [
-        ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", "Test?", 5, "completed", now),
-        ("b2c3d4e5-f6a7-8901-bcde-f12345678901", "financial", "Another?", 3, "running", now),
+        ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", "Test?", 5, "completed", now, None),
+        ("b2c3d4e5-f6a7-8901-bcde-f12345678901", "financial", "Another?", 3, "running", now, None),
     ]
     conn, cursor = _make_conn(fetchall=rows)
 
@@ -205,7 +209,7 @@ def test_list_sessions_empty():
 def test_list_sessions_with_offset():
     now = datetime.now(timezone.utc)
     rows = [
-        ("c3d4e5f6-a7b8-9012-cdef-123456789012", "political", "Third?", 2, "pending", now),
+        ("c3d4e5f6-a7b8-9012-cdef-123456789012", "political", "Third?", 2, "pending", now, None),
     ]
     conn, cursor = _make_conn(fetchall=rows)
 
@@ -215,7 +219,8 @@ def test_list_sessions_with_offset():
     sql = cursor.execute.call_args[0][0]
     assert "OFFSET" in sql
     params = cursor.execute.call_args[0][1]
-    assert params == (10, 2)
+    # params end with (limit, offset)
+    assert params[-2:] == (10, 2)
 
 
 def test_list_sessions_orders_by_created_at():
@@ -289,3 +294,159 @@ def test_delete_responses():
     params = cursor.execute.call_args[0][1]
     assert params == (sid,)
     conn.commit.assert_called_once()
+
+
+# ── soft_delete_session ──────────────────────────────────────────────────────
+
+def test_soft_delete_session():
+    conn, cursor = _make_conn()
+    sid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    soft_delete_session(conn, sid)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "UPDATE focus_group_sessions" in sql
+    assert "deleted_at" in sql
+    assert "NOW()" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == (sid,)
+    conn.commit.assert_called_once()
+
+
+# ── restore_session ──────────────────────────────────────────────────────────
+
+def test_restore_session():
+    conn, cursor = _make_conn()
+    sid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    restore_session(conn, sid)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "UPDATE focus_group_sessions" in sql
+    assert "deleted_at" in sql
+    assert "NULL" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == (sid,)
+    conn.commit.assert_called_once()
+
+
+# ── purge_expired_sessions ───────────────────────────────────────────────────
+
+def test_purge_expired_sessions():
+    conn, cursor = _make_conn()
+
+    purge_expired_sessions(conn)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "DELETE FROM focus_group_sessions" in sql
+    assert "deleted_at" in sql
+    assert "30 days" in sql
+    conn.commit.assert_called_once()
+
+
+# ── permanently_delete_session ───────────────────────────────────────────────
+
+def test_permanently_delete_session():
+    conn, cursor = _make_conn()
+    sid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    permanently_delete_session(conn, sid)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "DELETE FROM focus_group_sessions" in sql
+    assert "id = %s" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == (sid,)
+    conn.commit.assert_called_once()
+
+
+# ── list_sessions with filters ───────────────────────────────────────────────
+
+def test_list_sessions_excludes_deleted_by_default():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "deleted_at IS NULL" in sql
+
+
+def test_list_sessions_with_deleted_flag():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10, deleted=True)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "deleted_at IS NOT NULL" in sql
+    assert "30 days" in sql
+
+
+def test_list_sessions_with_search():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10, search="cool app")
+
+    sql = cursor.execute.call_args[0][0]
+    assert "question ILIKE" in sql
+    params = cursor.execute.call_args[0][1]
+    assert "%cool app%" in params
+
+
+def test_list_sessions_with_sector_filter():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10, sector="tech")
+
+    sql = cursor.execute.call_args[0][0]
+    assert "sector = %s" in sql
+    params = cursor.execute.call_args[0][1]
+    assert "tech" in params
+
+
+def test_list_sessions_with_all_filters():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10, search="app", sector="financial", deleted=True)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "deleted_at IS NOT NULL" in sql
+    assert "question ILIKE" in sql
+    assert "sector = %s" in sql
+
+
+# ── count_sessions with filters ──────────────────────────────────────────────
+
+def test_count_sessions_excludes_deleted_by_default():
+    conn, cursor = _make_conn(fetchone=(5,))
+
+    count_sessions(conn)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "deleted_at IS NULL" in sql
+
+
+def test_count_sessions_with_deleted_flag():
+    conn, cursor = _make_conn(fetchone=(3,))
+
+    count_sessions(conn, deleted=True)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "deleted_at IS NOT NULL" in sql
+
+
+def test_count_sessions_with_search():
+    conn, cursor = _make_conn(fetchone=(2,))
+
+    count_sessions(conn, search="test")
+
+    sql = cursor.execute.call_args[0][0]
+    assert "question ILIKE" in sql
+
+
+def test_count_sessions_with_sector():
+    conn, cursor = _make_conn(fetchone=(1,))
+
+    count_sessions(conn, sector="political")
+
+    sql = cursor.execute.call_args[0][0]
+    assert "sector = %s" in sql
