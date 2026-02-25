@@ -1,20 +1,23 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import NewSession from "./pages/NewSession";
-import SessionDetail from "./pages/SessionDetail";
-import SessionList from "./pages/SessionList";
+import NewPitch from "./pages/NewPitch";
+import PitchResults from "./pages/PitchResults";
+import PitchList from "./pages/PitchList";
 
 export default function App() {
   return (
     <BrowserRouter>
       <nav>
-        <Link to="/">Sessions</Link>
-        <Link to="/new">New Session</Link>
+        <Link to="/" className="nav-brand">FocusTest</Link>
+        <div className="nav-links">
+          <Link to="/">Pitches</Link>
+          <Link to="/new" className="nav-new-pitch">+ New Pitch</Link>
+        </div>
       </nav>
       <main>
         <Routes>
-          <Route path="/" element={<SessionList />} />
-          <Route path="/new" element={<NewSession />} />
-          <Route path="/sessions/:id" element={<SessionDetail />} />
+          <Route path="/" element={<PitchList />} />
+          <Route path="/new" element={<NewPitch />} />
+          <Route path="/sessions/:id" element={<PitchResults />} />
         </Routes>
       </main>
     </BrowserRouter>
