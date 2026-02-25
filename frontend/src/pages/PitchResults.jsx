@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getSession, createSession, rerunSession } from "../api";
 import ResponseCard from "../components/ResponseCard";
 import ExportButtons from "../components/ExportButtons";
+import PricingAnalysis from "../components/PricingAnalysis";
 import {
   parseProductName,
   parseProductDescription,
@@ -253,6 +254,10 @@ export default function PitchResults() {
       )}
 
       <ExportButtons sessionId={session.id} />
+
+      {session.status === "completed" && responses.length > 0 && (
+        <PricingAnalysis sessionId={session.id} />
+      )}
 
       <h2>Panel Responses ({responses.length})</h2>
       {responses.length === 0 ? (

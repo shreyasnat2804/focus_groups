@@ -671,3 +671,160 @@ button:disabled {
   color: #868e96;
   font-style: italic;
 }
+
+/* --- Pricing Analysis --- */
+
+.pricing-analysis-section {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pricing-analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.pricing-analysis-header h2 {
+  margin: 0;
+}
+
+.pricing-analysis-desc {
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-bottom: 1rem;
+}
+
+.pricing-config {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pricing-config label {
+  flex: 1;
+  min-width: 140px;
+}
+
+.pricing-prices-input {
+  width: 100%;
+}
+
+.pricing-run-btn {
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.pricing-results {
+  margin-top: 1rem;
+}
+
+.pricing-results-meta {
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-bottom: 1rem;
+}
+
+/* --- WTP Charts --- */
+
+.wtp-chart-container {
+  margin-bottom: 2rem;
+}
+
+.wtp-chart-container h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.wtp-chart-container h4 {
+  font-size: 0.95rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: #495057;
+}
+
+.wtp-price-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wtp-price-badge {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  min-width: 120px;
+}
+
+.wtp-price-badge.optimal {
+  background: #e7f5ff;
+  border: 1px solid #a5d8ff;
+}
+
+.wtp-price-badge.range {
+  background: #ebfbee;
+  border: 1px solid #b2f2bb;
+}
+
+.wtp-price-badge-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #868e96;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wtp-price-badge-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* --- WTP Tables --- */
+
+.wtp-demand-table,
+.wtp-segment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wtp-demand-table th,
+.wtp-segment-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+.wtp-demand-table td,
+.wtp-segment-table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.wtp-demand-table tr:hover,
+.wtp-segment-table tr:hover {
+  background: #f8f9fa;
+}
+
+.wtp-segment-summary {
+  margin-top: 1.5rem;
+}
+
+.wtp-segment-summary h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}

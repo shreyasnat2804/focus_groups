@@ -73,6 +73,25 @@ export async function rerunSession(id, { question, sector, num_personas, demogra
   return resp.json();
 }
 
+export async function runWtpAnalysis(id, { price_points, segment_by } = {}) {
+  const body = {};
+  if (price_points) body.price_points = price_points;
+  if (segment_by) body.segment_by = segment_by;
+
+  const resp = await fetch(`${BASE}/${id}/wtp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+    throw new Error(err.detail || "WTP analysis failed");
+  }
+
+  return resp.json();
+}
+
 export function exportCsvUrl(id) {
   return `${BASE}/${id}/export/csv`;
 }
