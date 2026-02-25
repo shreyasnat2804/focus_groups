@@ -17,9 +17,20 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from focus_groups.export import export_csv, export_pdf
+from focus_groups.personas.cards import PersonaCard
 from focus_groups.personas.selection import select_personas
 from focus_groups.claude import get_client, run_focus_group
-from focus_groups.db import get_conn
+from focus_groups.db import get_conn, get_posts_by_ids
+from focus_groups.wtp.van_westendorp import (
+    collect_psm_responses,
+    compute_psm_curves,
+    find_price_points,
+)
+from focus_groups.wtp.gabor_granger import (
+    collect_demand_responses,
+    compute_demand_curve,
+)
+from focus_groups.wtp.segmentation import segment_psm_by, segment_demand_by
 from focus_groups.sessions import (
     count_sessions,
     create_session,
@@ -61,6 +72,11 @@ class RerunRequest(BaseModel):
     sector: str | None = None
     num_personas: int | None = None
     demographic_filter: dict | None = None
+
+
+class WtpRequest(BaseModel):
+    price_points: list[int] = [49, 99, 199, 299, 499]
+    segment_by: str = "income_bracket"
 
 
 class SessionCreated(BaseModel):
@@ -264,6 +280,106 @@ def rerun_session_endpoint(session_id: str, req: RerunRequest):
         status="completed",
         num_responses=len(responses),
     )
+
+
+@app.post("/api/sessions/{session_id}/wtp")
+def run_wtp_endpoint(session_id: str, req: WtpRequest):
+    """
+    Run Willingness to Pay analysis on an existing session's personas.
+
+    Reconstructs PersonaCards from the session's response post_ids,
+    runs Van Westendorp PSM and Gabor-Granger demand simulation,
+    and returns full results with demographic segmentation.
+    """
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found.")
+
+        responses = session.get("responses", [])
+        if not responses:
+            raise HTTPException(status_code=400, detail="Session has no responses to analyze.")
+
+        # Reconstruct PersonaCards from session responses
+        post_ids = [r["post_id"] for r in responses if r.get("post_id")]
+        posts = get_posts_by_ids(conn, post_ids)
+    finally:
+        conn.close()
+
+    if not posts:
+        raise HTTPException(status_code=400, detail="Could not load persona data for this session.")
+
+    cards = [
+        PersonaCard(
+            post_id=p["post_id"],
+            demographic_tags=p["demographic_tags"],
+            text_excerpt=p["text"][:300],
+            sector=p["sector"],
+        )
+        for p in posts
+    ]
+
+    # Extract product description from the session question
+    product = session["question"]
+
+    try:
+        client = get_client()
+
+        # Van Westendorp PSM
+        psm_raw = collect_psm_responses(client, cards, product)
+        psm_curves = compute_psm_curves(psm_raw)
+        psm_pts = find_price_points(psm_curves)
+
+        # Gabor-Granger
+        demand_raw = collect_demand_responses(client, cards, product, req.price_points)
+        demand_curve = compute_demand_curve(demand_raw, req.price_points)
+
+        # Segmented analysis
+        psm_segments = segment_psm_by(psm_raw, req.segment_by)
+        demand_segments = segment_demand_by(demand_raw, req.segment_by)
+
+        # Compute curves per segment
+        segment_psm_results = {}
+        for seg_name, seg_data in psm_segments.items():
+            if len(seg_data) >= 2:
+                seg_curves = compute_psm_curves(seg_data)
+                seg_pts = find_price_points(seg_curves)
+                segment_psm_results[seg_name] = {
+                    "optimal_price": seg_pts["optimal_price"],
+                    "acceptable_range": seg_pts["acceptable_range"],
+                    "n": len(seg_data),
+                }
+
+        segment_demand_results = {}
+        for seg_name, seg_data in demand_segments.items():
+            seg_curve = compute_demand_curve(seg_data, req.price_points)
+            segment_demand_results[seg_name] = seg_curve
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"WTP analysis failed: {e}")
+
+    return {
+        "session_id": session_id,
+        "num_personas": len(cards),
+        "van_westendorp": {
+            "responses": psm_raw,
+            "curves": psm_curves,
+            "optimal_price": psm_pts["optimal_price"],
+            "acceptable_range": psm_pts["acceptable_range"],
+        },
+        "gabor_granger": {
+            "responses": demand_raw,
+            "demand_curve": demand_curve,
+        },
+        "segments": {
+            "dimension": req.segment_by,
+            "psm": segment_psm_results,
+            "demand": segment_demand_results,
+        },
+    }
 
 
 @app.get("/api/sessions/{session_id}/export/csv")

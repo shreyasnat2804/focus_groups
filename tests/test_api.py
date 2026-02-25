@@ -402,3 +402,83 @@ def test_rerun_session_missing_question(mock_deps):
     )
 
     assert resp.status_code == 422
+
+
+# ── POST /sessions/{id}/wtp ─────────────────────────────────────────────────
+
+def test_wtp_endpoint_success(mock_deps):
+    """WTP endpoint should return Van Westendorp + Gabor-Granger results."""
+    session_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    mock_deps["get_session"].return_value = {
+        "id": session_id,
+        "question": "Product: TestApp\n\nA cool product.",
+        "sector": "tech",
+        "num_personas": 2,
+        "demographic_filter": {},
+        "status": "completed",
+        "responses": [
+            {"post_id": 1, "persona_summary": "25-34 year old male", "response_text": "POSITIVE\nGreat!"},
+            {"post_id": 2, "persona_summary": "35-44 year old female", "response_text": "MIXED\nOk."},
+        ],
+    }
+
+    psm_responses = [
+        {"post_id": 1, "demographics": {"age_group": "25-34"}, "too_cheap": 20, "cheap": 50, "expensive": 150, "too_expensive": 300},
+        {"post_id": 2, "demographics": {"age_group": "35-44"}, "too_cheap": 30, "cheap": 60, "expensive": 120, "too_expensive": 250},
+    ]
+    demand_responses = [
+        {"post_id": 1, "demographics": {"age_group": "25-34"}, "decisions": {"49": True, "99": True, "199": False}},
+        {"post_id": 2, "demographics": {"age_group": "35-44"}, "decisions": {"49": True, "99": False, "199": False}},
+    ]
+
+    posts_data = [
+        {"post_id": 1, "text": "Tech layoffs are brutal.", "sector": "tech", "demographic_tags": {"age_group": "25-34", "gender": "male"}},
+        {"post_id": 2, "text": "My company adopted AI.", "sector": "tech", "demographic_tags": {"age_group": "35-44", "gender": "female"}},
+    ]
+
+    with (
+        patch("focus_groups.api.get_posts_by_ids", return_value=posts_data),
+        patch("focus_groups.api.collect_psm_responses", return_value=psm_responses),
+        patch("focus_groups.api.collect_demand_responses", return_value=demand_responses),
+    ):
+        resp = mock_deps["client"].post(
+            f"/api/sessions/{session_id}/wtp",
+            json={"price_points": [49, 99, 199], "segment_by": "age_group"},
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["session_id"] == session_id
+    assert "van_westendorp" in data
+    assert "gabor_granger" in data
+    assert "segments" in data
+    assert data["van_westendorp"]["optimal_price"] is not None
+    assert len(data["van_westendorp"]["acceptable_range"]) == 2
+    assert "demand_curve" in data["gabor_granger"]
+
+
+def test_wtp_endpoint_session_not_found(mock_deps):
+    mock_deps["get_session"].return_value = None
+
+    resp = mock_deps["client"].post(
+        "/api/sessions/nonexistent/wtp",
+        json={"price_points": [49, 99]},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_wtp_endpoint_no_responses(mock_deps):
+    mock_deps["get_session"].return_value = {
+        "id": "abc",
+        "question": "Product: X\n\nSomething.",
+        "responses": [],
+    }
+
+    resp = mock_deps["client"].post(
+        "/api/sessions/abc/wtp",
+        json={},
+    )
+
+    assert resp.status_code == 400
+    assert "no responses" in resp.json()["detail"].lower()

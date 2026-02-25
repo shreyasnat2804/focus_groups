@@ -293,6 +293,42 @@ def get_post_ids_by_source_ids(conn, source_ids: list[str]) -> dict[str, int]:
         return {row[0]: row[1] for row in cur.fetchall()}
 
 
+def get_posts_by_ids(conn, post_ids: list[int]) -> list[dict]:
+    """
+    Return post data for the given IDs, including demographic tags.
+
+    Returns list of dicts: {post_id, text, sector, demographic_tags}
+    """
+    if not post_ids:
+        return []
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT p.id, p.text, p.metadata->>'sector' AS sector
+            FROM posts p
+            WHERE p.id = ANY(%s)
+            """,
+            (post_ids,),
+        )
+        rows = cur.fetchall()
+
+    if not rows:
+        return []
+
+    tags_by_post = _load_tags_for_posts(conn, post_ids)
+
+    return [
+        {
+            "post_id": r[0],
+            "text": r[1] or "",
+            "sector": r[2],
+            "demographic_tags": tags_by_post.get(r[0], {}),
+        }
+        for r in rows
+    ]
+
+
 def get_authors_with_multiple_posts(conn) -> list[str]:
     """
     Return authors who have 2+ posts, excluding [deleted]/[removed]/AutoModerator/null.
