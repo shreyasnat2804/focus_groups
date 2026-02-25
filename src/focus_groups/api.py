@@ -50,7 +50,7 @@ class SessionRequest(BaseModel):
 
 
 class SessionCreated(BaseModel):
-    session_id: int
+    session_id: str
     status: str
     num_responses: int
 
@@ -107,7 +107,7 @@ def create_session_endpoint(req: SessionRequest):
 
 
 @app.get("/sessions/{session_id}")
-def get_session_endpoint(session_id: int):
+def get_session_endpoint(session_id: str):
     """Get a session with all its responses."""
     conn = get_conn()
     try:
@@ -134,7 +134,7 @@ def list_sessions_endpoint(limit: int = Query(default=20, ge=1, le=100)):
 
 
 @app.get("/sessions/{session_id}/export/csv")
-def export_csv_endpoint(session_id: int):
+def export_csv_endpoint(session_id: str):
     """Export a session as CSV."""
     conn = get_conn()
     try:
@@ -154,7 +154,7 @@ def export_csv_endpoint(session_id: int):
 
 
 @app.get("/sessions/{session_id}/export/pdf")
-def export_pdf_endpoint(session_id: int):
+def export_pdf_endpoint(session_id: str):
     """Export a session as PDF."""
     conn = get_conn()
     try:

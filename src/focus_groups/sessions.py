@@ -15,7 +15,7 @@ def create_session(
     demographic_filter: dict,
     num_personas: int,
     question: str,
-) -> int:
+) -> str:
     """
     Insert a new focus group session and return its id.
 
@@ -31,12 +31,12 @@ def create_session(
             """,
             (sector, Json(demographic_filter), question, num_personas),
         )
-        session_id = cur.fetchone()[0]
+        session_id = str(cur.fetchone()[0])
     conn.commit()
     return session_id
 
 
-def save_responses(conn, session_id: int, responses: list[dict]) -> int:
+def save_responses(conn, session_id: str, responses: list[dict]) -> int:
     """
     Bulk-insert focus group responses for a session.
 
@@ -70,7 +70,7 @@ def save_responses(conn, session_id: int, responses: list[dict]) -> int:
     return len(responses)
 
 
-def complete_session(conn, session_id: int) -> None:
+def complete_session(conn, session_id: str) -> None:
     """Mark a session as completed with a timestamp."""
     with conn.cursor() as cur:
         cur.execute(
@@ -84,7 +84,7 @@ def complete_session(conn, session_id: int) -> None:
     conn.commit()
 
 
-def fail_session(conn, session_id: int) -> None:
+def fail_session(conn, session_id: str) -> None:
     """Mark a session as failed."""
     with conn.cursor() as cur:
         cur.execute(
@@ -98,7 +98,7 @@ def fail_session(conn, session_id: int) -> None:
     conn.commit()
 
 
-def get_session(conn, session_id: int) -> dict | None:
+def get_session(conn, session_id: str) -> dict | None:
     """
     Fetch a session with all its responses.
 

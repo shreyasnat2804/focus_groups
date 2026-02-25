@@ -40,7 +40,8 @@ def _make_conn(fetchone=_SENTINEL, fetchall=_SENTINEL):
 # ── create_session ────────────────────────────────────────────────────────────
 
 def test_create_session_returns_id():
-    conn, cursor = _make_conn(fetchone=(7,))
+    fake_uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    conn, cursor = _make_conn(fetchone=(fake_uuid,))
 
     session_id = create_session(
         conn,
@@ -50,7 +51,7 @@ def test_create_session_returns_id():
         question="What do you think about AI?",
     )
 
-    assert session_id == 7
+    assert session_id == fake_uuid
     cursor.execute.assert_called_once()
     sql = cursor.execute.call_args[0][0]
     assert "INSERT INTO focus_group_sessions" in sql
@@ -59,7 +60,7 @@ def test_create_session_returns_id():
 
 
 def test_create_session_passes_params():
-    conn, cursor = _make_conn(fetchone=(1,))
+    conn, cursor = _make_conn(fetchone=("b2c3d4e5-f6a7-8901-bcde-f12345678901",))
 
     create_session(conn, "financial", {"gender": "female"}, 3, "Test?")
 
@@ -70,7 +71,7 @@ def test_create_session_passes_params():
 
 
 def test_create_session_none_sector():
-    conn, cursor = _make_conn(fetchone=(1,))
+    conn, cursor = _make_conn(fetchone=("c3d4e5f6-a7b8-9012-cdef-123456789012",))
 
     create_session(conn, None, {}, 5, "Q?")
 
@@ -101,7 +102,7 @@ def test_save_responses_inserts_rows():
         },
     ]
 
-    count = save_responses(conn, session_id=7, responses=responses)
+    count = save_responses(conn, session_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890", responses=responses)
 
     assert count == 2
     conn.commit.assert_called_once()
@@ -110,7 +111,7 @@ def test_save_responses_inserts_rows():
 def test_save_responses_empty_list():
     conn, cursor = _make_conn()
 
-    count = save_responses(conn, session_id=1, responses=[])
+    count = save_responses(conn, session_id="b2c3d4e5-f6a7-8901-bcde-f12345678901", responses=[])
 
     assert count == 0
     conn.commit.assert_not_called()
@@ -121,7 +122,7 @@ def test_save_responses_empty_list():
 def test_complete_session_sets_status():
     conn, cursor = _make_conn()
 
-    complete_session(conn, session_id=7)
+    complete_session(conn, session_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
     sql = cursor.execute.call_args[0][0]
     assert "status = 'completed'" in sql
@@ -132,7 +133,7 @@ def test_complete_session_sets_status():
 def test_fail_session_sets_status():
     conn, cursor = _make_conn()
 
-    fail_session(conn, session_id=7)
+    fail_session(conn, session_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
     sql = cursor.execute.call_args[0][0]
     assert "status = 'failed'" in sql
@@ -143,7 +144,7 @@ def test_fail_session_sets_status():
 
 def test_get_session_returns_dict():
     now = datetime.now(timezone.utc)
-    session_row = (1, "tech", {"age_group": "25-34"}, "Test?", 5, "completed", now, now)
+    session_row = ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", {"age_group": "25-34"}, "Test?", 5, "completed", now, now)
     response_rows = [
         (10, 42, "25-34 male", "prompt...", "Response 1", "claude-sonnet-4-20250514", now),
     ]
@@ -152,10 +153,10 @@ def test_get_session_returns_dict():
     cursor.fetchone.return_value = session_row
     cursor.fetchall.return_value = response_rows
 
-    result = get_session(conn, session_id=1)
+    result = get_session(conn, session_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
     assert result is not None
-    assert result["id"] == 1
+    assert result["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     assert result["sector"] == "tech"
     assert result["question"] == "Test?"
     assert result["status"] == "completed"
@@ -166,7 +167,7 @@ def test_get_session_returns_dict():
 def test_get_session_not_found():
     conn, cursor = _make_conn(fetchone=None)
 
-    result = get_session(conn, session_id=999)
+    result = get_session(conn, session_id="00000000-0000-0000-0000-000000000000")
 
     assert result is None
 
@@ -176,15 +177,15 @@ def test_get_session_not_found():
 def test_list_sessions_returns_list():
     now = datetime.now(timezone.utc)
     rows = [
-        (1, "tech", "Test?", 5, "completed", now),
-        (2, "financial", "Another?", 3, "running", now),
+        ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", "Test?", 5, "completed", now),
+        ("b2c3d4e5-f6a7-8901-bcde-f12345678901", "financial", "Another?", 3, "running", now),
     ]
     conn, cursor = _make_conn(fetchall=rows)
 
     result = list_sessions(conn, limit=10)
 
     assert len(result) == 2
-    assert result[0]["id"] == 1
+    assert result[0]["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     assert result[1]["sector"] == "financial"
 
 

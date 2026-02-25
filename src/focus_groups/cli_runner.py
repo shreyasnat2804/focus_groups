@@ -28,7 +28,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--sector", default=None, help="Sector filter: tech, financial, political.")
     parser.add_argument("--num-personas", type=int, default=5, help="Number of personas (default 5).")
     parser.add_argument("--no-save", action="store_true", help="Skip saving results to DB.")
-    parser.add_argument("--session-id", type=int, default=None, help="Session ID for export (use with --export-csv/--export-pdf).")
+    parser.add_argument("--session-id", type=str, default=None, help="Session ID (UUID) for export (use with --export-csv/--export-pdf).")
     parser.add_argument("--export-csv", default=None, metavar="PATH", help="Export session to CSV file.")
     parser.add_argument("--export-pdf", default=None, metavar="PATH", help="Export session to PDF file.")
     return parser.parse_args(argv)
@@ -94,7 +94,7 @@ def run_pipeline(
     conn.close()
 
 
-def export_session(session_id: int, csv_path: str | None, pdf_path: str | None) -> None:
+def export_session(session_id: str, csv_path: str | None, pdf_path: str | None) -> None:
     """Fetch a session from DB and write CSV/PDF exports to disk."""
     conn = get_conn()
     try:

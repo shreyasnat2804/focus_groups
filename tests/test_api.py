@@ -72,7 +72,7 @@ def mock_deps(sample_cards, sample_responses):
         mock_get_client.return_value = MagicMock()
         mock_select.return_value = sample_cards
         mock_run.return_value = sample_responses
-        mock_create.return_value = 1
+        mock_create.return_value = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
         mock_save.return_value = 2
 
         from focus_groups.api import app
@@ -104,7 +104,7 @@ def test_create_session_success(mock_deps):
 
     assert resp.status_code == 200
     data = resp.json()
-    assert data["session_id"] == 1
+    assert data["session_id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     assert data["status"] == "completed"
     assert data["num_responses"] == 2
 
@@ -122,7 +122,7 @@ def test_create_session_minimal_params(mock_deps):
 
     assert resp.status_code == 200
     data = resp.json()
-    assert data["session_id"] == 1
+    assert data["session_id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 
 def test_create_session_with_demographic_filter(mock_deps):
@@ -177,7 +177,7 @@ def test_create_session_claude_error_marks_failed(mock_deps):
 def test_get_session_success(mock_deps):
     now = datetime.now(timezone.utc).isoformat()
     mock_deps["get_session"].return_value = {
-        "id": 1,
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         "sector": "tech",
         "demographic_filter": {},
         "question": "Test?",
@@ -198,17 +198,17 @@ def test_get_session_success(mock_deps):
         ],
     }
 
-    resp = mock_deps["client"].get("/sessions/1")
+    resp = mock_deps["client"].get("/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["id"] == 1
+    assert data["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     assert len(data["responses"]) == 1
 
 
 def test_get_session_not_found(mock_deps):
     mock_deps["get_session"].return_value = None
 
-    resp = mock_deps["client"].get("/sessions/999")
+    resp = mock_deps["client"].get("/sessions/00000000-0000-0000-0000-000000000000")
     assert resp.status_code == 404
 
 
@@ -217,14 +217,14 @@ def test_get_session_not_found(mock_deps):
 def test_list_sessions_success(mock_deps):
     now = datetime.now(timezone.utc).isoformat()
     mock_deps["list_sessions"].return_value = [
-        {"id": 1, "sector": "tech", "question": "Q?", "num_personas": 2, "status": "completed", "created_at": now},
+        {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "sector": "tech", "question": "Q?", "num_personas": 2, "status": "completed", "created_at": now},
     ]
 
     resp = mock_deps["client"].get("/sessions")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["id"] == 1
+    assert data[0]["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 
 def test_list_sessions_with_limit(mock_deps):

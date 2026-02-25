@@ -4,7 +4,7 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS focus_group_sessions (
-    id                 BIGSERIAL    PRIMARY KEY,
+    id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     sector             VARCHAR(50),
     demographic_filter JSONB        DEFAULT '{}',
     question           TEXT         NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS focus_group_sessions (
 
 CREATE TABLE IF NOT EXISTS focus_group_responses (
     id              BIGSERIAL   PRIMARY KEY,
-    session_id      BIGINT      NOT NULL REFERENCES focus_group_sessions(id) ON DELETE CASCADE,
+    session_id      UUID        NOT NULL REFERENCES focus_group_sessions(id) ON DELETE CASCADE,
     post_id         BIGINT      NOT NULL REFERENCES posts(id),
     persona_summary TEXT        NOT NULL,
     system_prompt   TEXT        NOT NULL,

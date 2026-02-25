@@ -71,7 +71,7 @@ def test_run_pipeline_full(
     mock_get_client.return_value = MagicMock()
     mock_select.return_value = sample_cards
     mock_run.return_value = sample_responses
-    mock_create.return_value = 1
+    mock_create.return_value = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     mock_save.return_value = 2
 
     output = StringIO()
@@ -191,7 +191,7 @@ def test_parse_args_missing_question():
 def test_parse_args_export_flags():
     from focus_groups.cli_runner import parse_args
 
-    args = parse_args(["--session-id", "42", "--export-csv", "out.csv", "--export-pdf", "out.pdf"])
-    assert args.session_id == 42
+    args = parse_args(["--session-id", "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "--export-csv", "out.csv", "--export-pdf", "out.pdf"])
+    assert args.session_id == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     assert args.export_csv == "out.csv"
     assert args.export_pdf == "out.pdf"

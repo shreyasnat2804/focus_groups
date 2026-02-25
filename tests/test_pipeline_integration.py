@@ -109,7 +109,7 @@ def test_pipeline_with_mocked_claude(conn):
     # Extract session_id from output
     for line in text.split("\n"):
         if "Session saved: id=" in line:
-            session_id = int(line.split("id=")[1])
+            session_id = line.split("id=")[1].strip()
             break
 
     session = get_session(conn, session_id)
