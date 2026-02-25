@@ -156,7 +156,7 @@ def get_session(conn, session_id: str) -> dict | None:
     }
 
 
-def list_sessions(conn, limit: int = 20) -> list[dict]:
+def list_sessions(conn, limit: int = 10, offset: int = 0) -> list[dict]:
     """Return recent sessions (without responses) ordered by newest first."""
     with conn.cursor() as cur:
         cur.execute(
@@ -164,9 +164,9 @@ def list_sessions(conn, limit: int = 20) -> list[dict]:
             SELECT id, sector, question, num_personas, status, created_at
             FROM focus_group_sessions
             ORDER BY id DESC
-            LIMIT %s
+            LIMIT %s OFFSET %s
             """,
-            (limit,),
+            (limit, offset),
         )
         rows = cur.fetchall()
 
@@ -181,3 +181,10 @@ def list_sessions(conn, limit: int = 20) -> list[dict]:
         }
         for r in rows
     ]
+
+
+def count_sessions(conn) -> int:
+    """Return total number of sessions."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM focus_group_sessions")
+        return cur.fetchone()[0]

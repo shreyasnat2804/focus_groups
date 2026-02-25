@@ -67,6 +67,7 @@ def mock_deps(sample_cards, sample_responses):
         patch("focus_groups.api.fail_session") as mock_fail,
         patch("focus_groups.api.get_session") as mock_get_session,
         patch("focus_groups.api.list_sessions") as mock_list,
+        patch("focus_groups.api.count_sessions") as mock_count,
     ):
         mock_get_conn.return_value = MagicMock()
         mock_get_client.return_value = MagicMock()
@@ -74,6 +75,7 @@ def mock_deps(sample_cards, sample_responses):
         mock_run.return_value = sample_responses
         mock_create.return_value = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
         mock_save.return_value = 2
+        mock_count.return_value = 0
 
         from focus_groups.api import app
         client = TestClient(app)
@@ -90,6 +92,7 @@ def mock_deps(sample_cards, sample_responses):
             "fail_session": mock_fail,
             "get_session": mock_get_session,
             "list_sessions": mock_list,
+            "count_sessions": mock_count,
         }
 
 
@@ -219,17 +222,60 @@ def test_list_sessions_success(mock_deps):
     mock_deps["list_sessions"].return_value = [
         {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "sector": "tech", "question": "Q?", "num_personas": 2, "status": "completed", "created_at": now},
     ]
+    mock_deps["count_sessions"].return_value = 1
 
     resp = mock_deps["client"].get("/sessions")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
-    assert data[0]["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    assert data["total"] == 1
 
 
 def test_list_sessions_with_limit(mock_deps):
     mock_deps["list_sessions"].return_value = []
+    mock_deps["count_sessions"].return_value = 0
 
     resp = mock_deps["client"].get("/sessions?limit=5")
     assert resp.status_code == 200
+    mock_deps["list_sessions"].assert_called_once()
+
+
+def test_list_sessions_returns_pagination_metadata(mock_deps):
+    now = datetime.now(timezone.utc).isoformat()
+    mock_deps["list_sessions"].return_value = [
+        {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "sector": "tech", "question": "Q?", "num_personas": 2, "status": "completed", "created_at": now},
+    ]
+    mock_deps["count_sessions"].return_value = 25
+
+    resp = mock_deps["client"].get("/sessions?limit=10&offset=0")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 25
+    assert data["limit"] == 10
+    assert data["offset"] == 0
+    assert data["has_more"] is True
+    assert len(data["items"]) == 1
+
+
+def test_list_sessions_has_more_false_on_last_page(mock_deps):
+    now = datetime.now(timezone.utc).isoformat()
+    mock_deps["list_sessions"].return_value = [
+        {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "sector": "tech", "question": "Q?", "num_personas": 2, "status": "completed", "created_at": now},
+    ]
+    mock_deps["count_sessions"].return_value = 5
+
+    resp = mock_deps["client"].get("/sessions?limit=10&offset=0")
+    data = resp.json()
+    assert data["has_more"] is False
+
+
+def test_list_sessions_with_offset(mock_deps):
+    mock_deps["list_sessions"].return_value = []
+    mock_deps["count_sessions"].return_value = 30
+
+    resp = mock_deps["client"].get("/sessions?limit=10&offset=20")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["offset"] == 20
     mock_deps["list_sessions"].assert_called_once()
