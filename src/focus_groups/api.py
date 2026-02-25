@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from io import BytesIO
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -88,9 +91,11 @@ def create_session_endpoint(req: SessionRequest):
         responses = run_focus_group(client, cards, req.question)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         fail_session(conn, session_id)
-        raise HTTPException(status_code=500, detail="Focus group generation failed.")
+        raise HTTPException(status_code=500, detail=f"Focus group generation failed: {e}")
     finally:
         conn.close()
 
