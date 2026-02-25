@@ -85,16 +85,6 @@ export const FeaturesScene: React.FC = () => {
             >
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  backgroundColor: "#228be615",
-                  border: "1px solid #228be640",
-                  marginBottom: 10,
-                }}
-              />
-              <div
-                style={{
                   fontSize: 15,
                   fontWeight: 700,
                   color: "white",
