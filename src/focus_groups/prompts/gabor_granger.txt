@@ -1,0 +1,10 @@
+Consider the following product:
+
+{product_description}
+
+As this person, for each of the following price points, decide whether you would purchase this product at that price. Consider your income, needs, and how much value this product provides to someone like you.
+
+Price points: {price_points_str}
+
+Respond with ONLY a JSON object mapping each price to true (would buy) or false (would not buy), no other text:
+{{{price_json_template}}}
