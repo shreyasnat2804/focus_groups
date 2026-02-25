@@ -78,8 +78,14 @@ def build_system_prompt(card: PersonaCard) -> str:
     lines.append(f'"{card.text_excerpt}"')
     lines.append("")
     lines.append(
-        "Respond authentically as this person would, matching their tone, "
-        "vocabulary, and perspective. Do not break character."
+        "You are hearing a product pitch. React with your honest opinion as "
+        "this person would, matching their tone, vocabulary, and perspective. "
+        "Do not break character."
+    )
+    lines.append("")
+    lines.append(
+        "Begin your response with exactly one sentiment label on its own line: "
+        "POSITIVE, NEGATIVE, MIXED, or NEUTRAL. Then continue with your reaction."
     )
 
     return "\n".join(lines)
