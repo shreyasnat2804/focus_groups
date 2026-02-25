@@ -8,14 +8,13 @@ acceptable price range.
 
 from __future__ import annotations
 
-import json
-
 import numpy as np
 import anthropic
 
 from focus_groups.personas.cards import PersonaCard
 from focus_groups.personas.profiles import build_system_prompt, load_prompt_template
 from focus_groups.claude import MODEL, MAX_TOKENS
+from focus_groups.wtp.parsing import extract_json
 
 PSM_KEYS = ("too_cheap", "cheap", "expensive", "too_expensive")
 
@@ -50,7 +49,7 @@ def collect_psm_responses(
         )
 
         raw_text = message.content[0].text.strip()
-        parsed = json.loads(raw_text)
+        parsed = extract_json(raw_text)
 
         results.append({
             "post_id": card.post_id,

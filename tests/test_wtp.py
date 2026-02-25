@@ -2,6 +2,7 @@
 Tests for WTP (Willingness to Pay) analysis module.
 
 Covers:
+- JSON extraction/parsing from Claude responses
 - Van Westendorp Price Sensitivity Meter (PSM)
 - Gabor-Granger demand simulation
 - Segmented output by demographic dimension
@@ -87,6 +88,53 @@ def _make_mock_client_for_gabor_granger(responses: list[dict]) -> MagicMock:
         side_effects.append(message)
     client.messages.create.side_effect = side_effects
     return client
+
+
+# ── JSON Parsing ─────────────────────────────────────────────────────────────
+
+class TestExtractJson:
+    """Tests for robust JSON extraction from Claude responses."""
+
+    def test_clean_json(self):
+        from focus_groups.wtp.parsing import extract_json
+        result = extract_json('{"too_cheap": 20, "cheap": 50}')
+        assert result == {"too_cheap": 20, "cheap": 50}
+
+    def test_json_with_markdown_fence(self):
+        from focus_groups.wtp.parsing import extract_json
+        text = 'Here is my answer:\n```json\n{"too_cheap": 20, "cheap": 50}\n```'
+        result = extract_json(text)
+        assert result == {"too_cheap": 20, "cheap": 50}
+
+    def test_json_with_surrounding_text(self):
+        from focus_groups.wtp.parsing import extract_json
+        text = 'As a budget-conscious person, I would say:\n{"too_cheap": 10, "cheap": 30, "expensive": 80, "too_expensive": 150}\nHope that helps!'
+        result = extract_json(text)
+        assert result["too_cheap"] == 10
+        assert result["too_expensive"] == 150
+
+    def test_json_with_plain_fence(self):
+        from focus_groups.wtp.parsing import extract_json
+        text = '```\n{"49": true, "99": false}\n```'
+        result = extract_json(text)
+        assert result == {"49": True, "99": False}
+
+    def test_invalid_json_raises(self):
+        from focus_groups.wtp.parsing import extract_json
+        import pytest
+        with pytest.raises(ValueError, match="Could not extract JSON"):
+            extract_json("I don't know the prices.")
+
+    def test_empty_string_raises(self):
+        from focus_groups.wtp.parsing import extract_json
+        import pytest
+        with pytest.raises(ValueError, match="Could not extract JSON"):
+            extract_json("")
+
+    def test_json_with_whitespace(self):
+        from focus_groups.wtp.parsing import extract_json
+        result = extract_json('  \n  {"a": 1}  \n  ')
+        assert result == {"a": 1}
 
 
 # ── Van Westendorp PSM ───────────────────────────────────────────────────────

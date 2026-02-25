@@ -8,13 +8,12 @@ would buy at each price.
 
 from __future__ import annotations
 
-import json
-
 import anthropic
 
 from focus_groups.personas.cards import PersonaCard
 from focus_groups.personas.profiles import build_system_prompt, load_prompt_template
 from focus_groups.claude import MODEL, MAX_TOKENS
+from focus_groups.wtp.parsing import extract_json
 
 
 def collect_demand_responses(
@@ -55,7 +54,7 @@ def collect_demand_responses(
         )
 
         raw_text = message.content[0].text.strip()
-        parsed = json.loads(raw_text)
+        parsed = extract_json(raw_text)
 
         decisions = {}
         for p in price_points:
