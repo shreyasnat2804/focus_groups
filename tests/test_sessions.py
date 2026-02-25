@@ -216,6 +216,16 @@ def test_list_sessions_with_offset():
     assert params == (10, 2)
 
 
+def test_list_sessions_orders_by_created_at():
+    conn, cursor = _make_conn(fetchall=[])
+
+    list_sessions(conn, limit=10)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "ORDER BY created_at DESC" in sql
+    assert "ORDER BY id" not in sql
+
+
 def test_list_sessions_default_offset_zero():
     conn, cursor = _make_conn(fetchall=[])
 

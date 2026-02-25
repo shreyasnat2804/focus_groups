@@ -279,3 +279,24 @@ def test_list_sessions_with_offset(mock_deps):
     data = resp.json()
     assert data["offset"] == 20
     mock_deps["list_sessions"].assert_called_once()
+
+
+def test_list_sessions_clamps_offset_past_total(mock_deps):
+    mock_deps["list_sessions"].return_value = []
+    mock_deps["count_sessions"].return_value = 5
+
+    resp = mock_deps["client"].get("/sessions?limit=10&offset=100")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["offset"] == 0
+    assert data["has_more"] is False
+
+
+def test_list_sessions_clamps_offset_to_last_page(mock_deps):
+    mock_deps["list_sessions"].return_value = []
+    mock_deps["count_sessions"].return_value = 25
+
+    resp = mock_deps["client"].get("/sessions?limit=10&offset=100")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["offset"] == 20

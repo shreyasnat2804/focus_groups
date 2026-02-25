@@ -163,7 +163,7 @@ def list_sessions(conn, limit: int = 10, offset: int = 0) -> list[dict]:
             """
             SELECT id, sector, question, num_personas, status, created_at
             FROM focus_group_sessions
-            ORDER BY id DESC
+            ORDER BY created_at DESC
             LIMIT %s OFFSET %s
             """,
             (limit, offset),

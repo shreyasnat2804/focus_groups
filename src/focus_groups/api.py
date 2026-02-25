@@ -130,8 +130,10 @@ def list_sessions_endpoint(
     """List recent sessions with pagination."""
     conn = get_conn()
     try:
-        sessions = list_sessions(conn, limit=limit, offset=offset)
         total = count_sessions(conn)
+        if offset >= total and total > 0:
+            offset = max(0, (total - 1) // limit * limit)
+        sessions = list_sessions(conn, limit=limit, offset=offset)
     finally:
         conn.close()
 

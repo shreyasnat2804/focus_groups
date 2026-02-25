@@ -65,7 +65,7 @@ export default function SessionList() {
             </tbody>
           </table>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
-            <button disabled={!hasPrev} onClick={() => setOffset(offset - PAGE_SIZE)}>
+            <button disabled={!hasPrev} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
               Previous
             </button>
             <span>Page {page} of {totalPages}</span>
