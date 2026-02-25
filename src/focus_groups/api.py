@@ -28,6 +28,8 @@ from focus_groups.sessions import (
     fail_session,
     get_session,
     list_sessions,
+    update_session_question,
+    delete_responses,
 )
 
 app = FastAPI(title="Focus Groups API", version="0.1.0")
@@ -47,6 +49,13 @@ class SessionRequest(BaseModel):
     question: str
     num_personas: int
     sector: str | None = None
+    demographic_filter: dict | None = None
+
+
+class RerunRequest(BaseModel):
+    question: str
+    sector: str | None = None
+    num_personas: int | None = None
     demographic_filter: dict | None = None
 
 
@@ -144,6 +153,62 @@ def list_sessions_endpoint(
         "offset": offset,
         "has_more": offset + limit < total,
     }
+
+
+@app.post("/sessions/{session_id}/rerun", response_model=SessionCreated)
+def rerun_session_endpoint(session_id: str, req: RerunRequest):
+    """
+    Re-run a session: update question, delete old responses, re-select
+    personas, run Claude, save new responses.
+
+    Optional overrides for sector, num_personas, and demographic_filter
+    fall back to the session's existing values if not provided.
+    """
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found.")
+
+        # Use overrides or fall back to existing session values
+        sector = req.sector if req.sector is not None else session["sector"]
+        num_personas = req.num_personas if req.num_personas is not None else session["num_personas"]
+        demo_filter = req.demographic_filter if req.demographic_filter is not None else (session["demographic_filter"] or {})
+
+        # Update question and clear old responses
+        update_session_question(conn, session_id, req.question)
+        delete_responses(conn, session_id)
+
+        # Re-select personas and run
+        cards = select_personas(
+            conn,
+            demographic_filter=demo_filter,
+            sector=sector,
+            n=num_personas,
+        )
+
+        if not cards:
+            raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
+
+        client = get_client()
+        responses = run_focus_group(client, cards, req.question)
+        save_responses(conn, session_id, responses)
+        complete_session(conn, session_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        fail_session(conn, session_id)
+        raise HTTPException(status_code=500, detail=f"Focus group re-run failed: {e}")
+    finally:
+        conn.close()
+
+    return SessionCreated(
+        session_id=session_id,
+        status="completed",
+        num_responses=len(responses),
+    )
 
 
 @app.get("/sessions/{session_id}/export/csv")

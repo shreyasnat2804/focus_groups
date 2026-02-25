@@ -14,41 +14,339 @@ body {
   background: #f8f9fa;
 }
 
+/* --- Nav --- */
+
 nav {
   display: flex;
-  gap: 1.5rem;
-  padding: 1rem 2rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 2rem;
   background: #fff;
   border-bottom: 1px solid #dee2e6;
+}
+
+.nav-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #228be6;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
 }
 
 nav a {
   color: #495057;
   text-decoration: none;
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
 nav a:hover {
   color: #212529;
 }
 
+.nav-new-pitch {
+  padding: 0.4rem 0.8rem;
+  background: #228be6;
+  color: #fff !important;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.nav-new-pitch:hover {
+  background: #1c7ed6;
+  color: #fff !important;
+}
+
+/* --- Layout --- */
+
 main {
-  max-width: 800px;
+  max-width: 900px;
   margin: 2rem auto;
   padding: 0 1rem;
 }
 
 h1 {
   font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 h2 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   margin-bottom: 1rem;
+  margin-top: 1.5rem;
 }
 
-.card {
+/* --- Pitch List --- */
+
+.pitch-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.btn-new-pitch {
+  padding: 0.5rem 1rem;
+  background: #228be6;
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-new-pitch:hover {
+  background: #1c7ed6;
+}
+
+.pitch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.pitch-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.pitch-card:hover {
+  border-color: #228be6;
+  box-shadow: 0 2px 8px rgba(34, 139, 230, 0.1);
+}
+
+.pitch-card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+}
+
+.pitch-card-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #868e96;
+  margin-bottom: 0.75rem;
+}
+
+.sector-tag {
+  background: #e7f5ff;
+  color: #1971c2;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.pitch-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #868e96;
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.status-badge {
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-completed {
+  background: #d3f9d8;
+  color: #2b8a3e;
+}
+
+.status-running {
+  background: #fff3bf;
+  color: #e67700;
+}
+
+.status-failed {
+  background: #ffe3e3;
+  color: #e03131;
+}
+
+/* --- Sentiment bars --- */
+
+.sentiment-bar-container {
+  margin-bottom: 0.75rem;
+}
+
+.sentiment-bar,
+.sentiment-bar-large {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #e9ecef;
+}
+
+.sentiment-bar-large {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.sentiment-segment {
+  transition: width 0.3s ease;
+}
+
+.sentiment-segment.positive {
+  background: #2b8a3e;
+}
+
+.sentiment-segment.mixed {
+  background: #e8590c;
+}
+
+.sentiment-segment.negative {
+  background: #e03131;
+}
+
+.sentiment-segment.neutral {
+  background: #adb5bd;
+}
+
+.sentiment-pct {
+  font-size: 0.75rem;
+  color: #868e96;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.sentiment-labels {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.sentiment-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sentiment-label::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.sentiment-label.positive::before {
+  background: #2b8a3e;
+}
+
+.sentiment-label.mixed::before {
+  background: #e8590c;
+}
+
+.sentiment-label.negative::before {
+  background: #e03131;
+}
+
+.sentiment-label.neutral::before {
+  background: #adb5bd;
+}
+
+/* --- Pitch Results --- */
+
+.pitch-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-bottom: 1.25rem;
+}
+
+.pitch-description-box {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* --- Pitch Edit Section --- */
+
+.pitch-edit-section {
+  margin-bottom: 1.5rem;
+}
+
+.pitch-toggle {
+  background: #f1f3f5;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.pitch-toggle:hover {
+  background: #e9ecef;
+}
+
+.pitch-edit-body {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pitch-edit-body .pitch-textarea {
+  width: 100%;
+}
+
+.pitch-edit-body .target-audience {
+  max-width: 600px;
+}
+
+.rerun-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-cancel {
+  background: #f1f3f5;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.btn-cancel:hover {
+  background: #e9ecef;
+}
+
+.sentiment-overview {
+  margin-bottom: 1.5rem;
+}
+
+/* --- Response Cards --- */
+
+.response-card {
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 6px;
@@ -56,22 +354,41 @@ h2 {
   margin-bottom: 1rem;
 }
 
-.card h3 {
-  font-size: 0.95rem;
-  color: #495057;
-  margin-bottom: 0.5rem;
+.response-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-.card p {
+.sentiment-badge {
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.persona-summary {
+  font-size: 0.85rem;
+  color: #868e96;
+}
+
+.response-text {
   font-size: 0.9rem;
   white-space: pre-wrap;
+  line-height: 1.6;
 }
+
+/* --- New Pitch Form --- */
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 500px;
+  gap: 1.25rem;
+  max-width: 600px;
 }
 
 label {
@@ -80,6 +397,13 @@ label {
   gap: 0.25rem;
   font-weight: 500;
   font-size: 0.9rem;
+}
+
+.helper-text {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #868e96;
+  margin-bottom: 0.25rem;
 }
 
 input,
@@ -95,6 +419,48 @@ textarea {
 textarea {
   min-height: 80px;
   resize: vertical;
+}
+
+.pitch-textarea {
+  min-height: 140px;
+}
+
+.target-audience {
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.target-audience legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.5rem;
+}
+
+.audience-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.audience-filters label {
+  flex: 1;
+  min-width: 140px;
+}
+
+.panel-size-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-size-row input {
+  width: 80px;
+}
+
+.panel-size-row span {
+  font-size: 0.85rem;
+  color: #868e96;
 }
 
 button {
@@ -117,20 +483,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.error {
-  color: #e03131;
-  background: #fff5f5;
-  border: 1px solid #ffc9c9;
-  border-radius: 4px;
-  padding: 0.75rem 1rem;
-  font-size: 0.9rem;
-}
-
-.meta {
-  font-size: 0.85rem;
-  color: #868e96;
-  margin-bottom: 1rem;
-}
+/* --- Export Buttons --- */
 
 .export-buttons {
   display: flex;
@@ -152,31 +505,26 @@ button:disabled {
   background: #e9ecef;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+/* --- Pagination --- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
 }
 
-th,
-td {
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #dee2e6;
+/* --- Error & Loading --- */
+
+.error {
+  color: #e03131;
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
   font-size: 0.9rem;
-}
-
-th {
-  font-weight: 600;
-  color: #495057;
-}
-
-td a {
-  color: #228be6;
-  text-decoration: none;
-}
-
-td a:hover {
-  text-decoration: underline;
+  margin-bottom: 1rem;
 }
 
 .loading {

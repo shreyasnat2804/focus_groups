@@ -188,3 +188,30 @@ def count_sessions(conn) -> int:
     with conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM focus_group_sessions")
         return cur.fetchone()[0]
+
+
+def update_session_question(conn, session_id: str, question: str) -> None:
+    """Update the question field for a session."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE focus_group_sessions
+            SET question = %s
+            WHERE id = %s
+            """,
+            (question, session_id),
+        )
+    conn.commit()
+
+
+def delete_responses(conn, session_id: str) -> None:
+    """Delete all responses for a session."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM focus_group_responses
+            WHERE session_id = %s
+            """,
+            (session_id,),
+        )
+    conn.commit()

@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from focus_groups.personas.cards import PersonaCard
+from focus_groups.sessions import update_session_question, delete_responses
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -68,6 +69,8 @@ def mock_deps(sample_cards, sample_responses):
         patch("focus_groups.api.get_session") as mock_get_session,
         patch("focus_groups.api.list_sessions") as mock_list,
         patch("focus_groups.api.count_sessions") as mock_count,
+        patch("focus_groups.api.update_session_question") as mock_update_q,
+        patch("focus_groups.api.delete_responses") as mock_delete_resp,
     ):
         mock_get_conn.return_value = MagicMock()
         mock_get_client.return_value = MagicMock()
@@ -93,6 +96,8 @@ def mock_deps(sample_cards, sample_responses):
             "get_session": mock_get_session,
             "list_sessions": mock_list,
             "count_sessions": mock_count,
+            "update_session_question": mock_update_q,
+            "delete_responses": mock_delete_resp,
         }
 
 
@@ -300,3 +305,100 @@ def test_list_sessions_clamps_offset_to_last_page(mock_deps):
     assert resp.status_code == 200
     data = resp.json()
     assert data["offset"] == 20
+
+
+# ── POST /sessions/{id}/rerun ────────────────────────────────────────────────
+
+def _setup_rerun_session(mock_deps, now=None):
+    """Configure mocks for rerun tests — session exists with standard fields."""
+    if now is None:
+        now = datetime.now(timezone.utc).isoformat()
+    mock_deps["get_session"].return_value = {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "sector": "tech",
+        "demographic_filter": {"age_group": "25-34"},
+        "question": "Old question?",
+        "num_personas": 2,
+        "status": "completed",
+        "created_at": now,
+        "completed_at": now,
+        "responses": [],
+    }
+
+
+def test_rerun_session_success(mock_deps):
+    _setup_rerun_session(mock_deps)
+
+    resp = mock_deps["client"].post(
+        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        json={"question": "New question?"},
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["session_id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    assert data["status"] == "completed"
+    assert data["num_responses"] == 2
+
+    mock_deps["update_session_question"].assert_called_once()
+    mock_deps["delete_responses"].assert_called_once()
+    mock_deps["select_personas"].assert_called_once()
+    mock_deps["run_focus_group"].assert_called_once()
+    mock_deps["complete_session"].assert_called_once()
+
+
+def test_rerun_session_with_options(mock_deps):
+    """Rerun with overridden sector, demographic_filter, and num_personas."""
+    _setup_rerun_session(mock_deps)
+
+    resp = mock_deps["client"].post(
+        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        json={
+            "question": "Updated pitch",
+            "sector": "financial",
+            "num_personas": 8,
+            "demographic_filter": {"gender": "female"},
+        },
+    )
+
+    assert resp.status_code == 200
+    # Verify select_personas was called with the overridden values
+    call_kwargs = mock_deps["select_personas"].call_args
+    assert call_kwargs[1]["sector"] == "financial"
+    assert call_kwargs[1]["n"] == 8
+    assert call_kwargs[1]["demographic_filter"] == {"gender": "female"}
+
+
+def test_rerun_session_not_found(mock_deps):
+    mock_deps["get_session"].return_value = None
+
+    resp = mock_deps["client"].post(
+        "/sessions/00000000-0000-0000-0000-000000000000/rerun",
+        json={"question": "New?"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_rerun_session_claude_error(mock_deps):
+    _setup_rerun_session(mock_deps)
+    mock_deps["run_focus_group"].side_effect = Exception("API error")
+
+    resp = mock_deps["client"].post(
+        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        json={"question": "New?"},
+    )
+
+    assert resp.status_code == 500
+    mock_deps["fail_session"].assert_called_once()
+
+
+def test_rerun_session_missing_question(mock_deps):
+    _setup_rerun_session(mock_deps)
+
+    resp = mock_deps["client"].post(
+        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        json={},
+    )
+
+    assert resp.status_code == 422

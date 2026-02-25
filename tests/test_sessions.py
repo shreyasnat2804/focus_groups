@@ -17,6 +17,8 @@ from focus_groups.sessions import (
     get_session,
     list_sessions,
     count_sessions,
+    update_session_question,
+    delete_responses,
 )
 
 
@@ -244,3 +246,46 @@ def test_list_sessions_count():
     assert total == 42
     sql = cursor.execute.call_args[0][0]
     assert "COUNT" in sql
+
+
+# ── update_session_question ──────────────────────────────────────────────────
+
+def test_update_session_question():
+    conn, cursor = _make_conn()
+    sid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    update_session_question(conn, sid, "New question?")
+
+    sql = cursor.execute.call_args[0][0]
+    assert "UPDATE focus_group_sessions" in sql
+    assert "question" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == ("New question?", sid)
+    conn.commit.assert_called_once()
+
+
+def test_update_session_question_updates_fields():
+    conn, cursor = _make_conn()
+    sid = "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+
+    update_session_question(conn, sid, "Product: NewApp\n\nA cool app")
+
+    params = cursor.execute.call_args[0][1]
+    assert params[0] == "Product: NewApp\n\nA cool app"
+    assert params[1] == sid
+
+
+# ── delete_responses ─────────────────────────────────────────────────────────
+
+def test_delete_responses():
+    conn, cursor = _make_conn()
+    sid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    delete_responses(conn, sid)
+
+    sql = cursor.execute.call_args[0][0]
+    assert "DELETE FROM focus_group_responses" in sql
+    assert "session_id" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == (sid,)
+    conn.commit.assert_called_once()
