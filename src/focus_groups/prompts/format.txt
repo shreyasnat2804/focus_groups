@@ -1,0 +1,1 @@
+Begin your response with exactly one sentiment label on its own line: POSITIVE, NEGATIVE, MIXED, or NEUTRAL. Then continue with your reaction.

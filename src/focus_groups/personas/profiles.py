@@ -1,12 +1,36 @@
 """
 Format PersonaCards into Claude API system prompts.
 
-No DB dependency — pure string formatting.
+Loads prompt templates from src/focus_groups/prompts/ and fills in
+persona-specific data at runtime.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from focus_groups.personas.cards import PersonaCard
+
+PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+
+
+def load_prompt_template(filename: str) -> str:
+    """
+    Load a prompt template file from the prompts directory.
+
+    Args:
+        filename: Name of the template file (e.g. "identity.txt")
+
+    Returns:
+        Raw template string with {placeholders} intact.
+
+    Raises:
+        FileNotFoundError: If the template file does not exist.
+    """
+    path = PROMPTS_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"Prompt template not found: {path}")
+    return path.read_text().strip()
 
 
 def format_demographic_summary(tags: dict) -> str:
@@ -15,7 +39,7 @@ def format_demographic_summary(tags: dict) -> str:
 
     Example:
         {"age_group": "25-34", "gender": "male", "income_bracket": "high_income"}
-        → "25-34 year old male, high income"
+        -> "25-34 year old male, high income"
 
     Args:
         tags: {dimension_name: value} e.g. from PersonaCard.demographic_tags
@@ -40,7 +64,7 @@ def format_demographic_summary(tags: dict) -> str:
         parts.append(gender)
 
     if income:
-        # Convert "high_income" → "high income"
+        # Convert "high_income" -> "high income"
         parts.append(income.replace("_", " "))
 
     # Include any remaining dimensions not handled above
@@ -56,7 +80,8 @@ def build_system_prompt(card: PersonaCard) -> str:
     """
     Format a PersonaCard as a Claude system prompt string.
 
-    Used by Stage 3 backend to ground Claude in a persona's voice.
+    Loads template files from the prompts/ directory and fills in
+    persona-specific data.
 
     Args:
         card: PersonaCard with demographic_tags, text_excerpt, sector
@@ -66,26 +91,19 @@ def build_system_prompt(card: PersonaCard) -> str:
     """
     demo_summary = format_demographic_summary(card.demographic_tags)
 
-    lines = ["You are simulating a real person with the following profile:"]
-
-    demo_line = f"Demographics: {demo_summary}" if demo_summary else "Demographics: unspecified"
+    # Build the demographic line
+    demo_line = demo_summary if demo_summary else "unspecified"
     if card.sector:
         demo_line += f", {card.sector} sector"
-    lines.append(demo_line)
 
-    lines.append("")
-    lines.append("Here is an example of how this person communicates:")
-    lines.append(f'"{card.text_excerpt}"')
-    lines.append("")
-    lines.append(
-        "You are hearing a product pitch. React with your honest opinion as "
-        "this person would, matching their tone, vocabulary, and perspective. "
-        "Do not break character."
+    identity = load_prompt_template("identity.txt").format(
+        demographic_summary=demo_line,
     )
-    lines.append("")
-    lines.append(
-        "Begin your response with exactly one sentiment label on its own line: "
-        "POSITIVE, NEGATIVE, MIXED, or NEUTRAL. Then continue with your reaction."
+    voice = load_prompt_template("voice.txt").format(
+        text_excerpt=card.text_excerpt,
     )
+    instructions = load_prompt_template("instructions.txt")
+    fmt = load_prompt_template("format.txt")
 
-    return "\n".join(lines)
+    sections = [identity, "", voice, "", instructions, "", fmt]
+    return "\n".join(sections)
