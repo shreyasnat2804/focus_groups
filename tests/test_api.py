@@ -104,7 +104,7 @@ def mock_deps(sample_cards, sample_responses):
 # ── POST /sessions ───────────────────────────────────────────────────────────
 
 def test_create_session_success(mock_deps):
-    resp = mock_deps["client"].post("/sessions", json={
+    resp = mock_deps["client"].post("/api/sessions", json={
         "question": "What do you think about AI?",
         "num_personas": 2,
         "sector": "tech",
@@ -123,7 +123,7 @@ def test_create_session_success(mock_deps):
 
 def test_create_session_minimal_params(mock_deps):
     """Only question and num_personas are required."""
-    resp = mock_deps["client"].post("/sessions", json={
+    resp = mock_deps["client"].post("/api/sessions", json={
         "question": "Test?",
         "num_personas": 3,
     })
@@ -134,7 +134,7 @@ def test_create_session_minimal_params(mock_deps):
 
 
 def test_create_session_with_demographic_filter(mock_deps):
-    resp = mock_deps["client"].post("/sessions", json={
+    resp = mock_deps["client"].post("/api/sessions", json={
         "question": "Test?",
         "num_personas": 2,
         "demographic_filter": {"age_group": "25-34"},
@@ -150,7 +150,7 @@ def test_create_session_with_demographic_filter(mock_deps):
 def test_create_session_no_personas_found(mock_deps):
     mock_deps["select_personas"].return_value = []
 
-    resp = mock_deps["client"].post("/sessions", json={
+    resp = mock_deps["client"].post("/api/sessions", json={
         "question": "Test?",
         "num_personas": 5,
         "sector": "tech",
@@ -161,7 +161,7 @@ def test_create_session_no_personas_found(mock_deps):
 
 
 def test_create_session_missing_question(mock_deps):
-    resp = mock_deps["client"].post("/sessions", json={
+    resp = mock_deps["client"].post("/api/sessions", json={
         "num_personas": 2,
     })
 
@@ -171,7 +171,7 @@ def test_create_session_missing_question(mock_deps):
 def test_create_session_claude_error_marks_failed(mock_deps):
     mock_deps["run_focus_group"].side_effect = Exception("API error")
 
-    resp = mock_deps["client"].post("/sessions", json={
+    resp = mock_deps["client"].post("/api/sessions", json={
         "question": "Test?",
         "num_personas": 2,
     })
@@ -206,7 +206,7 @@ def test_get_session_success(mock_deps):
         ],
     }
 
-    resp = mock_deps["client"].get("/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    resp = mock_deps["client"].get("/api/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     assert resp.status_code == 200
     data = resp.json()
     assert data["id"] == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
@@ -216,7 +216,7 @@ def test_get_session_success(mock_deps):
 def test_get_session_not_found(mock_deps):
     mock_deps["get_session"].return_value = None
 
-    resp = mock_deps["client"].get("/sessions/00000000-0000-0000-0000-000000000000")
+    resp = mock_deps["client"].get("/api/sessions/00000000-0000-0000-0000-000000000000")
     assert resp.status_code == 404
 
 
@@ -229,7 +229,7 @@ def test_list_sessions_success(mock_deps):
     ]
     mock_deps["count_sessions"].return_value = 1
 
-    resp = mock_deps["client"].get("/sessions")
+    resp = mock_deps["client"].get("/api/sessions")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["items"]) == 1
@@ -241,7 +241,7 @@ def test_list_sessions_with_limit(mock_deps):
     mock_deps["list_sessions"].return_value = []
     mock_deps["count_sessions"].return_value = 0
 
-    resp = mock_deps["client"].get("/sessions?limit=5")
+    resp = mock_deps["client"].get("/api/sessions?limit=5")
     assert resp.status_code == 200
     mock_deps["list_sessions"].assert_called_once()
 
@@ -253,7 +253,7 @@ def test_list_sessions_returns_pagination_metadata(mock_deps):
     ]
     mock_deps["count_sessions"].return_value = 25
 
-    resp = mock_deps["client"].get("/sessions?limit=10&offset=0")
+    resp = mock_deps["client"].get("/api/sessions?limit=10&offset=0")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 25
@@ -270,7 +270,7 @@ def test_list_sessions_has_more_false_on_last_page(mock_deps):
     ]
     mock_deps["count_sessions"].return_value = 5
 
-    resp = mock_deps["client"].get("/sessions?limit=10&offset=0")
+    resp = mock_deps["client"].get("/api/sessions?limit=10&offset=0")
     data = resp.json()
     assert data["has_more"] is False
 
@@ -279,7 +279,7 @@ def test_list_sessions_with_offset(mock_deps):
     mock_deps["list_sessions"].return_value = []
     mock_deps["count_sessions"].return_value = 30
 
-    resp = mock_deps["client"].get("/sessions?limit=10&offset=20")
+    resp = mock_deps["client"].get("/api/sessions?limit=10&offset=20")
     assert resp.status_code == 200
     data = resp.json()
     assert data["offset"] == 20
@@ -290,7 +290,7 @@ def test_list_sessions_clamps_offset_past_total(mock_deps):
     mock_deps["list_sessions"].return_value = []
     mock_deps["count_sessions"].return_value = 5
 
-    resp = mock_deps["client"].get("/sessions?limit=10&offset=100")
+    resp = mock_deps["client"].get("/api/sessions?limit=10&offset=100")
     assert resp.status_code == 200
     data = resp.json()
     assert data["offset"] == 0
@@ -301,7 +301,7 @@ def test_list_sessions_clamps_offset_to_last_page(mock_deps):
     mock_deps["list_sessions"].return_value = []
     mock_deps["count_sessions"].return_value = 25
 
-    resp = mock_deps["client"].get("/sessions?limit=10&offset=100")
+    resp = mock_deps["client"].get("/api/sessions?limit=10&offset=100")
     assert resp.status_code == 200
     data = resp.json()
     assert data["offset"] == 20
@@ -330,7 +330,7 @@ def test_rerun_session_success(mock_deps):
     _setup_rerun_session(mock_deps)
 
     resp = mock_deps["client"].post(
-        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        "/api/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
         json={"question": "New question?"},
     )
 
@@ -352,7 +352,7 @@ def test_rerun_session_with_options(mock_deps):
     _setup_rerun_session(mock_deps)
 
     resp = mock_deps["client"].post(
-        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        "/api/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
         json={
             "question": "Updated pitch",
             "sector": "financial",
@@ -373,7 +373,7 @@ def test_rerun_session_not_found(mock_deps):
     mock_deps["get_session"].return_value = None
 
     resp = mock_deps["client"].post(
-        "/sessions/00000000-0000-0000-0000-000000000000/rerun",
+        "/api/sessions/00000000-0000-0000-0000-000000000000/rerun",
         json={"question": "New?"},
     )
 
@@ -385,7 +385,7 @@ def test_rerun_session_claude_error(mock_deps):
     mock_deps["run_focus_group"].side_effect = Exception("API error")
 
     resp = mock_deps["client"].post(
-        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        "/api/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
         json={"question": "New?"},
     )
 
@@ -397,7 +397,7 @@ def test_rerun_session_missing_question(mock_deps):
     _setup_rerun_session(mock_deps)
 
     resp = mock_deps["client"].post(
-        "/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
+        "/api/sessions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/rerun",
         json={},
     )
 

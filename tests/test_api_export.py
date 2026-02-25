@@ -60,14 +60,14 @@ def mock_deps(sample_session):
 # ── CSV endpoint ─────────────────────────────────────────────────────────────
 
 def test_export_csv_returns_200(mock_deps):
-    resp = mock_deps["client"].get("/sessions/1/export/csv")
+    resp = mock_deps["client"].get("/api/sessions/1/export/csv")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/csv")
     assert "attachment" in resp.headers.get("content-disposition", "")
 
 
 def test_export_csv_content(mock_deps):
-    resp = mock_deps["client"].get("/sessions/1/export/csv")
+    resp = mock_deps["client"].get("/api/sessions/1/export/csv")
     text = resp.text
     assert "response_id" in text
     assert "25-34 year old male" in text
@@ -75,25 +75,25 @@ def test_export_csv_content(mock_deps):
 
 def test_export_csv_session_not_found(mock_deps):
     mock_deps["get_session"].return_value = None
-    resp = mock_deps["client"].get("/sessions/999/export/csv")
+    resp = mock_deps["client"].get("/api/sessions/999/export/csv")
     assert resp.status_code == 404
 
 
 # ── PDF endpoint ─────────────────────────────────────────────────────────────
 
 def test_export_pdf_returns_200(mock_deps):
-    resp = mock_deps["client"].get("/sessions/1/export/pdf")
+    resp = mock_deps["client"].get("/api/sessions/1/export/pdf")
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert "attachment" in resp.headers.get("content-disposition", "")
 
 
 def test_export_pdf_content(mock_deps):
-    resp = mock_deps["client"].get("/sessions/1/export/pdf")
+    resp = mock_deps["client"].get("/api/sessions/1/export/pdf")
     assert resp.content[:5] == b"%PDF-"
 
 
 def test_export_pdf_session_not_found(mock_deps):
     mock_deps["get_session"].return_value = None
-    resp = mock_deps["client"].get("/sessions/999/export/pdf")
+    resp = mock_deps["client"].get("/api/sessions/999/export/pdf")
     assert resp.status_code == 404

@@ -67,7 +67,7 @@ class SessionCreated(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@app.post("/sessions", response_model=SessionCreated)
+@app.post("/api/sessions", response_model=SessionCreated)
 def create_session_endpoint(req: SessionRequest):
     """
     Create a focus group session: select personas, run Claude, store results.
@@ -116,7 +116,7 @@ def create_session_endpoint(req: SessionRequest):
     )
 
 
-@app.get("/sessions/{session_id}")
+@app.get("/api/sessions/{session_id}")
 def get_session_endpoint(session_id: str):
     """Get a session with all its responses."""
     conn = get_conn()
@@ -131,7 +131,7 @@ def get_session_endpoint(session_id: str):
     return session
 
 
-@app.get("/sessions")
+@app.get("/api/sessions")
 def list_sessions_endpoint(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -155,7 +155,7 @@ def list_sessions_endpoint(
     }
 
 
-@app.post("/sessions/{session_id}/rerun", response_model=SessionCreated)
+@app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)
 def rerun_session_endpoint(session_id: str, req: RerunRequest):
     """
     Re-run a session: update question, delete old responses, re-select
@@ -211,7 +211,7 @@ def rerun_session_endpoint(session_id: str, req: RerunRequest):
     )
 
 
-@app.get("/sessions/{session_id}/export/csv")
+@app.get("/api/sessions/{session_id}/export/csv")
 def export_csv_endpoint(session_id: str):
     """Export a session as CSV."""
     conn = get_conn()
@@ -231,7 +231,7 @@ def export_csv_endpoint(session_id: str):
     )
 
 
-@app.get("/sessions/{session_id}/export/pdf")
+@app.get("/api/sessions/{session_id}/export/pdf")
 def export_pdf_endpoint(session_id: str):
     """Export a session as PDF."""
     conn = get_conn()

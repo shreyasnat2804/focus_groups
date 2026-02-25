@@ -1,4 +1,4 @@
-const BASE = "/sessions";
+const BASE = "/api/sessions";
 
 export async function createSession({ question, sector, num_personas, demographic_filter }) {
   const body = { question, num_personas };
