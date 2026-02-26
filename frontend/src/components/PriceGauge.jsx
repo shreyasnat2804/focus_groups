@@ -1,5 +1,3 @@
-import { PieChart, Pie, Cell } from "recharts";
-
 function getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice) {
   if (minPrice === maxPrice) return "Only one price point tested. Try adding more.";
   if (optimalPrice <= minPrice) return "At the floor. Consider testing lower prices.";
@@ -11,12 +9,28 @@ function getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice) {
 }
 
 function arcPoint(cx, cy, radius, ratio) {
-  // ratio 0 = left end (180°), ratio 1 = right end (0°)
   const angle = (180 - ratio * 180) * (Math.PI / 180);
   return {
     x: cx + radius * Math.cos(angle),
     y: cy - radius * Math.sin(angle),
   };
+}
+
+// SVG arc path for a donut segment from ratio startR to endR (0 = left, 1 = right)
+function arcPath(cx, cy, innerR, outerR, startRatio, endRatio) {
+  const s1 = arcPoint(cx, cy, outerR, startRatio);
+  const s2 = arcPoint(cx, cy, outerR, endRatio);
+  const s3 = arcPoint(cx, cy, innerR, endRatio);
+  const s4 = arcPoint(cx, cy, innerR, startRatio);
+  // largeArc flag: the arc spans more than 180° when ratio range > 0.5
+  const large = (endRatio - startRatio) > 0.5 ? 1 : 0;
+  return [
+    `M ${s1.x} ${s1.y}`,
+    `A ${outerR} ${outerR} 0 ${large} 1 ${s2.x} ${s2.y}`,
+    `L ${s3.x} ${s3.y}`,
+    `A ${innerR} ${innerR} 0 ${large} 0 ${s4.x} ${s4.y}`,
+    "Z",
+  ].join(" ");
 }
 
 export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, commentOverride, rawOptimalPrice }) {
@@ -25,27 +39,16 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
   const innerRadius = 80;
   const outerRadius = 120;
 
-  // Snapped price drives the arc fill and center label.
-  // Clamp away from exact 0 and 1: recharts drops a Pie segment entirely when its value is 0,
-  // which causes the orange (or gray) arc to vanish at the floor/ceiling.
-  const EPSILON = 0.005;
-  const fillRatio = Math.min(1 - EPSILON, Math.max(EPSILON, (optimalPrice - minPrice) / (maxPrice - minPrice)));
+  const fillRatio = Math.min(1, Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice)));
 
-  // Raw price drives the comment logic
   const priceForComment = rawOptimalPrice ?? optimalPrice;
   const rawFillRatio = Math.min(1, Math.max(0, (priceForComment - minPrice) / (maxPrice - minPrice)));
-
-  const data = [
-    { value: fillRatio },
-    { value: 1 - fillRatio },
-  ];
 
   // Marker for the true recommended price (only shown when different from snapped)
   const showMarker = rawOptimalPrice != null && rawOptimalPrice !== optimalPrice;
   const markerInner = showMarker ? arcPoint(cx, cy, innerRadius + 2, rawFillRatio) : null;
   const markerOuter = showMarker ? arcPoint(cx, cy, outerRadius - 2, rawFillRatio) : null;
 
-  // Place the label outside the arc normally; if it would clip at the top, flip it inside the hole
   let markerLabel = null;
   if (showMarker) {
     const outside = arcPoint(cx, cy, outerRadius + 14, rawFillRatio);
@@ -57,21 +60,19 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
   return (
     <div className="price-gauge-container">
       {label && <div className="price-gauge-label">{label}</div>}
-      <PieChart width={300} height={170}>
-        <Pie
-          data={data}
-          cx={cx}
-          cy={cy}
-          startAngle={180}
-          endAngle={0}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius}
-          dataKey="value"
-          isAnimationActive={false}
-        >
-          <Cell fill="#f97316" />
-          <Cell fill="#e5e7eb" />
-        </Pie>
+      <svg width={300} height={170} viewBox="0 0 300 170">
+        {/* Gray background arc (always full semicircle) */}
+        <path
+          d={arcPath(cx, cy, innerRadius, outerRadius, 0, 1)}
+          fill="#e5e7eb"
+        />
+        {/* Orange fill arc */}
+        {fillRatio > 0 && (
+          <path
+            d={arcPath(cx, cy, innerRadius, outerRadius, 0, fillRatio)}
+            fill="#f97316"
+          />
+        )}
 
         {/* True recommended price marker */}
         {showMarker && (
@@ -116,7 +117,7 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
         >
           optimal price
         </text>
-      </PieChart>
+      </svg>
       <div className="price-gauge-range">
         <span>${minPrice.toFixed(0)}</span>
         <span>${maxPrice.toFixed(0)}</span>
