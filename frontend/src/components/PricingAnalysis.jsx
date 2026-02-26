@@ -130,12 +130,31 @@ export default function PricingAnalysis({ sessionId }) {
             {results.num_personas} personas analyzed
           </div>
 
-          <PriceGauge
-            label="Recommended Price"
-            optimalPrice={results.van_westendorp.optimal_price}
-            minPrice={Math.min(...results.van_westendorp.curves.price_points)}
-            maxPrice={Math.max(...results.van_westendorp.curves.price_points)}
-          />
+          {(() => {
+            // Snap the raw optimal price to the closest user-inputted price point
+            const parsedPoints = pricesInput
+              .split(",")
+              .map((s) => parseInt(s.trim(), 10))
+              .filter((n) => !isNaN(n) && n > 0);
+            const rawOptimal = results.van_westendorp.optimal_price;
+            const snappedOptimal =
+              parsedPoints.length > 0
+                ? parsedPoints.reduce((closest, p) =>
+                    Math.abs(p - rawOptimal) < Math.abs(closest - rawOptimal)
+                      ? p
+                      : closest,
+                    parsedPoints[0]
+                  )
+                : rawOptimal;
+            return (
+              <PriceGauge
+                label="Recommended Price"
+                optimalPrice={snappedOptimal}
+                minPrice={Math.min(...parsedPoints)}
+                maxPrice={Math.max(...parsedPoints)}
+              />
+            );
+          })()}
 
           <VanWestendorpChart
             curves={results.van_westendorp.curves}

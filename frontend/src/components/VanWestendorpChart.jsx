@@ -16,14 +16,27 @@ export default function VanWestendorpChart({ curves, pricePoints }) {
     return <p>No Van Westendorp data available.</p>;
   }
 
-  // Transform curves into recharts data format
-  const data = curves.price_points.map((price, i) => ({
-    price: Math.round(price),
-    "Too Cheap": curves.too_cheap[i],
-    Bargain: curves.cheap[i],
-    Expensive: curves.expensive[i],
-    "Too Expensive": curves.too_expensive[i],
-  }));
+  // Transform curves into recharts data format.
+  // QUICK FIX: Van Westendorp's four curves are independent cumulative
+  // distributions and don't naturally sum to 100% at any price point.
+  // We normalize each row so the four values sum to 100 for readability.
+  // This is a cosmetic scaling only — it does not change the curve shapes
+  // or the crossing points used for optimal price / acceptable range.
+  const data = curves.price_points.map((price, i) => {
+    const tc = curves.too_cheap[i];
+    const b = curves.cheap[i];
+    const e = curves.expensive[i];
+    const te = curves.too_expensive[i];
+    const total = tc + b + e + te;
+    const scale = total > 0 ? 100 / total : 1;
+    return {
+      price: Math.round(price),
+      "Too Cheap": parseFloat((tc * scale).toFixed(1)),
+      Bargain: parseFloat((b * scale).toFixed(1)),
+      Expensive: parseFloat((e * scale).toFixed(1)),
+      "Too Expensive": parseFloat((te * scale).toFixed(1)),
+    };
+  });
 
   const optimal = pricePoints?.optimal_price;
   const [rangeLow, rangeHigh] = pricePoints?.acceptable_range || [];

@@ -857,3 +857,11 @@ button:disabled {
   padding: 0 0.5rem;
   margin-top: -0.5rem;
 }
+
+.price-gauge-comment {
+  font-size: 0.8rem;
+  color: #495057;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
