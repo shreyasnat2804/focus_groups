@@ -159,6 +159,7 @@ export default function PricingAnalysis({ sessionId }) {
               <PriceGauge
                 label="Recommended Price"
                 optimalPrice={snappedOptimal}
+                rawOptimalPrice={rawOptimal}
                 minPrice={Math.min(...parsedPoints)}
                 maxPrice={Math.max(...parsedPoints)}
               />
