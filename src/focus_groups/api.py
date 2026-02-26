@@ -15,7 +15,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
 
 from focus_groups.export import export_csv, export_pdf
 from focus_groups.personas.cards import PersonaCard
@@ -85,12 +85,14 @@ class WtpRequest(BaseModel):
     billing_interval: Optional[Literal["monthly", "annual"]] = "monthly"
     segment_by: str = "income_bracket"
 
-    @field_validator("upfront_price_points", "subscription_price_points", mode="after")
-    @classmethod
-    def hybrid_fields_required(cls, v, info):
-        if info.data.get("pricing_model") == "hybrid" and v is None:
-            raise ValueError("hybrid model requires both upfront and subscription price points")
-        return v
+    @model_validator(mode="after")
+    def hybrid_fields_required(self):
+        if self.pricing_model == "hybrid":
+            if self.upfront_price_points is None:
+                raise ValueError("hybrid model requires upfront_price_points")
+            if self.subscription_price_points is None:
+                raise ValueError("hybrid model requires subscription_price_points")
+        return self
 
 
 def _derive_price_points(psm_pts: dict, n: int = 7) -> list[int]:
