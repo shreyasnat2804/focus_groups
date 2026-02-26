@@ -97,60 +97,60 @@ class TestPurgeThrottling:
     def test_purge_called_on_first_request(self):
         """First GET /api/sessions should trigger purge."""
         with (
-            patch("focus_groups.api.get_conn") as mock_conn,
             patch("focus_groups.api.purge_expired_sessions") as mock_purge,
             patch("focus_groups.api.count_sessions", return_value=0),
             patch("focus_groups.api.list_sessions", return_value=[]),
         ):
-            mock_conn.return_value = MagicMock()
             import focus_groups.api as api_mod
             api_mod._last_purge = 0  # reset
 
-            from focus_groups.api import app
+            from focus_groups.api import app, get_db
             from fastapi.testclient import TestClient
+            app.dependency_overrides[get_db] = lambda: MagicMock()
             client = TestClient(app)
 
             resp = client.get("/api/sessions")
+            app.dependency_overrides.clear()
             assert resp.status_code == 200
             mock_purge.assert_called_once()
 
     def test_purge_not_called_within_interval(self):
         """Second GET /api/sessions within the interval should NOT trigger purge."""
         with (
-            patch("focus_groups.api.get_conn") as mock_conn,
             patch("focus_groups.api.purge_expired_sessions") as mock_purge,
             patch("focus_groups.api.count_sessions", return_value=0),
             patch("focus_groups.api.list_sessions", return_value=[]),
         ):
-            mock_conn.return_value = MagicMock()
             import focus_groups.api as api_mod
             api_mod._last_purge = time.time()  # just ran
 
-            from focus_groups.api import app
+            from focus_groups.api import app, get_db
             from fastapi.testclient import TestClient
+            app.dependency_overrides[get_db] = lambda: MagicMock()
             client = TestClient(app)
 
             resp = client.get("/api/sessions")
+            app.dependency_overrides.clear()
             assert resp.status_code == 200
             mock_purge.assert_not_called()
 
     def test_purge_called_after_interval_expires(self):
         """GET /api/sessions after PURGE_INTERVAL has elapsed should trigger purge."""
         with (
-            patch("focus_groups.api.get_conn") as mock_conn,
             patch("focus_groups.api.purge_expired_sessions") as mock_purge,
             patch("focus_groups.api.count_sessions", return_value=0),
             patch("focus_groups.api.list_sessions", return_value=[]),
         ):
-            mock_conn.return_value = MagicMock()
             import focus_groups.api as api_mod
             api_mod._last_purge = time.time() - 3601  # expired
 
-            from focus_groups.api import app
+            from focus_groups.api import app, get_db
             from fastapi.testclient import TestClient
+            app.dependency_overrides[get_db] = lambda: MagicMock()
             client = TestClient(app)
 
             resp = client.get("/api/sessions")
+            app.dependency_overrides.clear()
             assert resp.status_code == 200
             mock_purge.assert_called_once()
 

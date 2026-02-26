@@ -57,8 +57,9 @@ def sample_responses():
 @pytest.fixture
 def mock_deps(sample_cards, sample_responses):
     """Patch all external dependencies and return the FastAPI test client."""
+    mock_conn = MagicMock()
+
     with (
-        patch("focus_groups.api.get_conn") as mock_get_conn,
         patch("focus_groups.api.get_client") as mock_get_client,
         patch("focus_groups.api.select_personas") as mock_select,
         patch("focus_groups.api.run_focus_group") as mock_run,
@@ -73,7 +74,6 @@ def mock_deps(sample_cards, sample_responses):
         patch("focus_groups.api.update_session_name") as mock_update_name,
         patch("focus_groups.api.delete_responses") as mock_delete_resp,
     ):
-        mock_get_conn.return_value = MagicMock()
         mock_get_client.return_value = MagicMock()
         mock_select.return_value = sample_cards
         mock_run.return_value = sample_responses
@@ -81,12 +81,14 @@ def mock_deps(sample_cards, sample_responses):
         mock_save.return_value = 2
         mock_count.return_value = 0
 
-        from focus_groups.api import app
+        from focus_groups.api import app, get_db
+        app.dependency_overrides[get_db] = lambda: mock_conn
+        app.state.limiter.reset()
         client = TestClient(app)
 
         yield {
             "client": client,
-            "get_conn": mock_get_conn,
+            "conn": mock_conn,
             "get_client": mock_get_client,
             "select_personas": mock_select,
             "run_focus_group": mock_run,
@@ -101,6 +103,8 @@ def mock_deps(sample_cards, sample_responses):
             "update_session_name": mock_update_name,
             "delete_responses": mock_delete_resp,
         }
+
+        app.dependency_overrides.clear()
 
 
 # ── POST /sessions ───────────────────────────────────────────────────────────
@@ -432,7 +436,7 @@ def test_rename_session_success(mock_deps):
     assert data["session_id"] == session_id
     assert data["name"] == "My CoolApp"
     mock_deps["update_session_name"].assert_called_once_with(
-        mock_deps["get_conn"].return_value, session_id, "My CoolApp"
+        mock_deps["conn"], session_id, "My CoolApp"
     )
 
 

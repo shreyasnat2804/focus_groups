@@ -16,14 +16,16 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def _mock_externals():
-    """Patch DB/Claude deps so endpoints don't hit real services."""
+    """Override get_db dependency and patch session helpers so endpoints don't hit real services."""
+    from focus_groups.api import app, get_db
+    app.dependency_overrides[get_db] = lambda: MagicMock()
     with (
-        patch("focus_groups.api.get_conn", return_value=MagicMock()),
         patch("focus_groups.api.count_sessions", return_value=0),
         patch("focus_groups.api.list_sessions", return_value=[]),
         patch("focus_groups.api.purge_expired_sessions"),
     ):
         yield
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -32,6 +34,7 @@ def client_auth_enabled(_mock_externals):
     with patch.dict("os.environ", {"FG_API_KEY": "test-secret-key"}, clear=False):
         # Re-import to pick up env change in the dependency
         from focus_groups.api import app
+        app.state.limiter.reset()
         yield TestClient(app)
 
 
@@ -42,6 +45,7 @@ def client_auth_disabled(_mock_externals):
         import os
         os.environ.pop("FG_API_KEY", None)
         from focus_groups.api import app
+        app.state.limiter.reset()
         yield TestClient(app)
 
 

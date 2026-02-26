@@ -11,19 +11,61 @@ logger = logging.getLogger(__name__)
 
 import psycopg2
 from psycopg2.extras import execute_values, Json
+from psycopg2.pool import ThreadedConnectionPool
 from pgvector.psycopg2 import register_vector
 
 
+def _pg_kwargs() -> dict:
+    """Return common Postgres connection keyword arguments."""
+    return {
+        "host": os.getenv("PG_HOST", "localhost"),
+        "port": os.getenv("PG_PORT", "5432"),
+        "dbname": os.getenv("PG_DB", "focusgroups"),
+        "user": os.getenv("PG_USER", "fg_user"),
+        "password": os.getenv("PG_PASSWORD", "localdev"),
+    }
+
+
 def get_conn():
-    conn = psycopg2.connect(
-        host=os.getenv("PG_HOST", "localhost"),
-        port=os.getenv("PG_PORT", "5432"),
-        dbname=os.getenv("PG_DB", "focusgroups"),
-        user=os.getenv("PG_USER", "fg_user"),
-        password=os.getenv("PG_PASSWORD", "localdev"),
-    )
+    conn = psycopg2.connect(**_pg_kwargs())
     register_vector(conn)
     return conn
+
+
+# ---------------------------------------------------------------------------
+# Connection pool (used by the FastAPI dependency)
+# ---------------------------------------------------------------------------
+
+_pool: ThreadedConnectionPool | None = None
+
+
+def init_pool(minconn: int = 2, maxconn: int = 10) -> None:
+    """Initialize the connection pool. Call once at app startup."""
+    global _pool
+    _pool = ThreadedConnectionPool(minconn, maxconn, **_pg_kwargs())
+
+
+def get_pool_conn():
+    """Get a connection from the pool."""
+    if _pool is None:
+        raise RuntimeError("Connection pool not initialised — call init_pool() first.")
+    conn = _pool.getconn()
+    register_vector(conn)
+    return conn
+
+
+def return_pool_conn(conn) -> None:
+    """Return a connection to the pool."""
+    if _pool is not None:
+        _pool.putconn(conn)
+
+
+def close_pool() -> None:
+    """Close all connections in the pool."""
+    global _pool
+    if _pool is not None:
+        _pool.closeall()
+        _pool = None
 
 
 def _sanitize_text(s) -> str:

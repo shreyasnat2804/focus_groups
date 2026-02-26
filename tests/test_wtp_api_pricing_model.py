@@ -87,60 +87,63 @@ def demand_responses():
 class TestWtpPricingModel:
     """Tests for pricing model variants in the WTP endpoint."""
 
-    @patch("focus_groups.api.get_conn")
     @patch("focus_groups.api.get_session")
     @patch("focus_groups.api.get_posts_by_ids")
     @patch("focus_groups.api.get_client")
     def test_one_time_default(
-        self, mock_get_client, mock_get_posts, mock_get_session, mock_get_conn,
+        self, mock_get_client, mock_get_posts, mock_get_session,
         sample_session, sample_posts, psm_responses, demand_responses,
     ):
         """Omitting pricing_model should default to one_time."""
-        from focus_groups.api import app
-        client = TestClient(app)
+        from focus_groups.api import app, get_db
 
-        mock_get_conn.return_value = MagicMock()
         mock_get_session.return_value = sample_session
         mock_get_posts.return_value = sample_posts
         mock_get_client.return_value = _mock_claude_responses(psm_responses, demand_responses)
+
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        client = TestClient(app)
 
         resp = client.post("/api/sessions/test-123/wtp", json={
             "segment_by": "income_bracket",
         })
 
+        app.dependency_overrides.clear()
         assert resp.status_code == 200
         data = resp.json()
         assert data["pricing_model"] == "one_time"
 
-    @patch("focus_groups.api.get_conn")
     @patch("focus_groups.api.get_session")
     @patch("focus_groups.api.get_posts_by_ids")
     @patch("focus_groups.api.get_client")
     def test_subscription_request(
-        self, mock_get_client, mock_get_posts, mock_get_session, mock_get_conn,
+        self, mock_get_client, mock_get_posts, mock_get_session,
         sample_session, sample_posts, psm_responses, demand_responses,
     ):
         """Subscription model should be accepted and returned in response."""
-        from focus_groups.api import app
-        client = TestClient(app)
+        from focus_groups.api import app, get_db
 
-        mock_get_conn.return_value = MagicMock()
         mock_get_session.return_value = sample_session
         mock_get_posts.return_value = sample_posts
         mock_get_client.return_value = _mock_claude_responses(psm_responses, demand_responses)
+
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        client = TestClient(app)
 
         resp = client.post("/api/sessions/test-123/wtp", json={
             "pricing_model": "subscription",
             "segment_by": "income_bracket",
         })
 
+        app.dependency_overrides.clear()
         assert resp.status_code == 200
         data = resp.json()
         assert data["pricing_model"] == "subscription"
 
     def test_hybrid_missing_fields(self):
         """Hybrid model should 422 if upfront/subscription price points missing."""
-        from focus_groups.api import app
+        from focus_groups.api import app, get_db
+        app.dependency_overrides[get_db] = lambda: MagicMock()
         client = TestClient(app)
 
         resp = client.post("/api/sessions/test-123/wtp", json={
@@ -148,19 +151,18 @@ class TestWtpPricingModel:
             "segment_by": "income_bracket",
         })
 
+        app.dependency_overrides.clear()
         assert resp.status_code == 422
 
-    @patch("focus_groups.api.get_conn")
     @patch("focus_groups.api.get_session")
     @patch("focus_groups.api.get_posts_by_ids")
     @patch("focus_groups.api.get_client")
     def test_hybrid_response_shape(
-        self, mock_get_client, mock_get_posts, mock_get_session, mock_get_conn,
+        self, mock_get_client, mock_get_posts, mock_get_session,
         sample_session, sample_posts, psm_responses,
     ):
         """Hybrid response should have hybrid_tiers and normalized_price_points."""
-        from focus_groups.api import app
-        client = TestClient(app)
+        from focus_groups.api import app, get_db
 
         # For hybrid, demand responses use total_12m as keys
         # 500 + 49*12 = 1088, 500 + 99*12 = 1688
@@ -169,10 +171,12 @@ class TestWtpPricingModel:
             {"1088": True, "1688": False},
         ]
 
-        mock_get_conn.return_value = MagicMock()
         mock_get_session.return_value = sample_session
         mock_get_posts.return_value = sample_posts
         mock_get_client.return_value = _mock_claude_responses(psm_responses, demand_responses)
+
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        client = TestClient(app)
 
         resp = client.post("/api/sessions/test-123/wtp", json={
             "pricing_model": "hybrid",
@@ -181,6 +185,7 @@ class TestWtpPricingModel:
             "segment_by": "income_bracket",
         })
 
+        app.dependency_overrides.clear()
         assert resp.status_code == 200
         data = resp.json()
         assert data["pricing_model"] == "hybrid"
@@ -188,17 +193,15 @@ class TestWtpPricingModel:
         assert "normalized_price_points" in data
         assert len(data["hybrid_tiers"]) == 2  # 1 upfront x 2 sub
 
-    @patch("focus_groups.api.get_conn")
     @patch("focus_groups.api.get_session")
     @patch("focus_groups.api.get_posts_by_ids")
     @patch("focus_groups.api.get_client")
     def test_hybrid_normalized_totals_sorted(
-        self, mock_get_client, mock_get_posts, mock_get_session, mock_get_conn,
+        self, mock_get_client, mock_get_posts, mock_get_session,
         sample_session, sample_posts, psm_responses,
     ):
         """normalized_price_points should be in ascending order."""
-        from focus_groups.api import app
-        client = TestClient(app)
+        from focus_groups.api import app, get_db
 
         # 500+49*12=1088, 500+99*12=1688, 1000+49*12=1588, 1000+99*12=2188
         demand_responses = [
@@ -206,10 +209,12 @@ class TestWtpPricingModel:
             {"1088": True, "1588": False, "1688": False, "2188": False},
         ]
 
-        mock_get_conn.return_value = MagicMock()
         mock_get_session.return_value = sample_session
         mock_get_posts.return_value = sample_posts
         mock_get_client.return_value = _mock_claude_responses(psm_responses, demand_responses)
+
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        client = TestClient(app)
 
         resp = client.post("/api/sessions/test-123/wtp", json={
             "pricing_model": "hybrid",
@@ -218,6 +223,7 @@ class TestWtpPricingModel:
             "segment_by": "income_bracket",
         })
 
+        app.dependency_overrides.clear()
         assert resp.status_code == 200
         data = resp.json()
         normalized = data["normalized_price_points"]

@@ -7,6 +7,7 @@ Run with: uvicorn focus_groups.api:app --reload
 from __future__ import annotations
 
 import time
+from contextlib import asynccontextmanager
 from io import BytesIO
 from typing import Literal, Optional
 
@@ -27,7 +28,7 @@ from focus_groups.export import export_csv, export_pdf
 from focus_groups.personas.cards import PersonaCard
 from focus_groups.personas.selection import select_personas
 from focus_groups.claude import get_client, run_focus_group
-from focus_groups.db import get_conn, get_posts_by_ids
+from focus_groups.db import get_conn, get_pool_conn, return_pool_conn, init_pool, close_pool, get_posts_by_ids
 from focus_groups.wtp.van_westendorp import (
     collect_psm_responses,
     compute_psm_curves,
@@ -61,10 +62,19 @@ PURGE_INTERVAL = 3600  # seconds — purge expired sessions at most once per hou
 
 limiter = Limiter(key_func=get_remote_address)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_pool()
+    yield
+    close_pool()
+
+
 app = FastAPI(
     title="Focus Groups API",
     version="0.1.0",
     dependencies=[Depends(require_api_key)],
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -76,6 +86,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def get_db():
+    """FastAPI dependency: yield a pooled connection, always returned."""
+    conn = get_pool_conn()
+    try:
+        yield conn
+    finally:
+        return_pool_conn(conn)
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -162,11 +181,10 @@ class SessionCreated(BaseModel):
 
 @app.post("/api/sessions", response_model=SessionCreated)
 @limiter.limit("5/minute")
-def create_session_endpoint(request: Request, req: SessionRequest):
+def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(get_db)):
     """
     Create a focus group session: select personas, run Claude, store results.
     """
-    conn = get_conn()
     demo_filter = req.demographic_filter or {}
 
     # Select diverse personas
@@ -200,8 +218,6 @@ def create_session_endpoint(request: Request, req: SessionRequest):
         traceback.print_exc()
         fail_session(conn, session_id)
         raise HTTPException(status_code=500, detail=f"Focus group generation failed: {e}")
-    finally:
-        conn.close()
 
     return SessionCreated(
         session_id=session_id,
@@ -212,13 +228,9 @@ def create_session_endpoint(request: Request, req: SessionRequest):
 
 @app.get("/api/sessions/{session_id}")
 @limiter.limit("30/minute")
-def get_session_endpoint(request: Request, session_id: str):
+def get_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Get a session with all its responses."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
 
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
@@ -230,6 +242,7 @@ def get_session_endpoint(request: Request, session_id: str):
 @limiter.limit("30/minute")
 def list_sessions_endpoint(
     request: Request,
+    conn=Depends(get_db),
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     search: str | None = Query(default=None),
@@ -237,23 +250,19 @@ def list_sessions_endpoint(
     deleted: bool = Query(default=False),
 ):
     """List recent sessions with pagination, search, and filters."""
-    conn = get_conn()
-    try:
-        # Purge sessions deleted more than 30 days ago (throttled to once per hour)
-        global _last_purge
-        if time.time() - _last_purge > PURGE_INTERVAL:
-            purge_expired_sessions(conn)
-            _last_purge = time.time()
+    # Purge sessions deleted more than 30 days ago (throttled to once per hour)
+    global _last_purge
+    if time.time() - _last_purge > PURGE_INTERVAL:
+        purge_expired_sessions(conn)
+        _last_purge = time.time()
 
-        total = count_sessions(conn, search=search, sector=sector, deleted=deleted)
-        if offset >= total and total > 0:
-            offset = max(0, (total - 1) // limit * limit)
-        sessions = list_sessions(
-            conn, limit=limit, offset=offset,
-            search=search, sector=sector, deleted=deleted,
-        )
-    finally:
-        conn.close()
+    total = count_sessions(conn, search=search, sector=sector, deleted=deleted)
+    if offset >= total and total > 0:
+        offset = max(0, (total - 1) // limit * limit)
+    sessions = list_sessions(
+        conn, limit=limit, offset=offset,
+        search=search, sector=sector, deleted=deleted,
+    )
 
     return {
         "items": sessions,
@@ -266,67 +275,51 @@ def list_sessions_endpoint(
 
 @app.delete("/api/sessions/{session_id}")
 @limiter.limit("20/minute")
-def delete_session_endpoint(request: Request, session_id: str):
+def delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Soft delete a session (move to trash)."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-        if session is None:
-            raise HTTPException(status_code=404, detail="Session not found.")
-        soft_delete_session(conn, session_id)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    soft_delete_session(conn, session_id)
     return {"status": "deleted", "session_id": session_id}
 
 
 @app.post("/api/sessions/{session_id}/restore")
 @limiter.limit("20/minute")
-def restore_session_endpoint(request: Request, session_id: str):
+def restore_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Restore a soft-deleted session from trash."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-        if session is None:
-            raise HTTPException(status_code=404, detail="Session not found.")
-        restore_session(conn, session_id)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    restore_session(conn, session_id)
     return {"status": "restored", "session_id": session_id}
 
 
 @app.delete("/api/sessions/{session_id}/permanent")
 @limiter.limit("20/minute")
-def permanently_delete_session_endpoint(request: Request, session_id: str):
+def permanently_delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Permanently delete a session (cannot be undone)."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-        if session is None:
-            raise HTTPException(status_code=404, detail="Session not found.")
-        permanently_delete_session(conn, session_id)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    permanently_delete_session(conn, session_id)
     return {"status": "permanently_deleted", "session_id": session_id}
 
 
 @app.patch("/api/sessions/{session_id}/name")
 @limiter.limit("20/minute")
-def rename_session_endpoint(request: Request, session_id: str, req: RenameRequest):
+def rename_session_endpoint(request: Request, session_id: str, req: RenameRequest, conn=Depends(get_db)):
     """Update the display name for a session."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-        if session is None:
-            raise HTTPException(status_code=404, detail="Session not found.")
-        update_session_name(conn, session_id, req.name)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    update_session_name(conn, session_id, req.name)
     return {"session_id": session_id, "name": req.name}
 
 
 @app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)
 @limiter.limit("5/minute")
-def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest):
+def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest, conn=Depends(get_db)):
     """
     Re-run a session: update question, delete old responses, re-select
     personas, run Claude, save new responses.
@@ -334,45 +327,40 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest)
     Optional overrides for sector, num_personas, and demographic_filter
     fall back to the session's existing values if not provided.
     """
-    conn = get_conn()
+    session = get_session(conn, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    # Use overrides or fall back to existing session values
+    sector = req.sector if req.sector is not None else session["sector"]
+    num_personas = req.num_personas if req.num_personas is not None else session["num_personas"]
+    demo_filter = req.demographic_filter if req.demographic_filter is not None else (session["demographic_filter"] or {})
+
+    # Update question and clear old responses
+    update_session_question(conn, session_id, req.question)
+    delete_responses(conn, session_id)
+
+    # Re-select personas and run
+    cards = select_personas(
+        conn,
+        demographic_filter=demo_filter,
+        sector=sector,
+        n=num_personas,
+    )
+
+    if not cards:
+        raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
+
     try:
-        session = get_session(conn, session_id)
-        if session is None:
-            raise HTTPException(status_code=404, detail="Session not found.")
-
-        # Use overrides or fall back to existing session values
-        sector = req.sector if req.sector is not None else session["sector"]
-        num_personas = req.num_personas if req.num_personas is not None else session["num_personas"]
-        demo_filter = req.demographic_filter if req.demographic_filter is not None else (session["demographic_filter"] or {})
-
-        # Update question and clear old responses
-        update_session_question(conn, session_id, req.question)
-        delete_responses(conn, session_id)
-
-        # Re-select personas and run
-        cards = select_personas(
-            conn,
-            demographic_filter=demo_filter,
-            sector=sector,
-            n=num_personas,
-        )
-
-        if not cards:
-            raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
-
         client = get_client()
         responses = run_focus_group(client, cards, req.question)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
-    except HTTPException:
-        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
         fail_session(conn, session_id)
         raise HTTPException(status_code=500, detail=f"Focus group re-run failed: {e}")
-    finally:
-        conn.close()
 
     return SessionCreated(
         session_id=session_id,
@@ -383,7 +371,7 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest)
 
 @app.post("/api/sessions/{session_id}/wtp")
 @limiter.limit("5/minute")
-def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest):
+def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=Depends(get_db)):
     """
     Run Willingness to Pay analysis on an existing session's personas.
 
@@ -391,21 +379,17 @@ def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest):
     runs Van Westendorp PSM and Gabor-Granger demand simulation,
     and returns full results with demographic segmentation.
     """
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-        if session is None:
-            raise HTTPException(status_code=404, detail="Session not found.")
+    session = get_session(conn, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
 
-        responses = session.get("responses", [])
-        if not responses:
-            raise HTTPException(status_code=400, detail="Session has no responses to analyze.")
+    responses = session.get("responses", [])
+    if not responses:
+        raise HTTPException(status_code=400, detail="Session has no responses to analyze.")
 
-        # Reconstruct PersonaCards from session responses
-        post_ids = [r["post_id"] for r in responses if r.get("post_id")]
-        posts = get_posts_by_ids(conn, post_ids)
-    finally:
-        conn.close()
+    # Reconstruct PersonaCards from session responses
+    post_ids = [r["post_id"] for r in responses if r.get("post_id")]
+    posts = get_posts_by_ids(conn, post_ids)
 
     if not posts:
         raise HTTPException(status_code=400, detail="Could not load persona data for this session.")
@@ -512,13 +496,9 @@ def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest):
 
 @app.get("/api/sessions/{session_id}/export/csv")
 @limiter.limit("10/minute")
-def export_csv_endpoint(request: Request, session_id: str):
+def export_csv_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Export a session as CSV."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
 
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
@@ -533,13 +513,9 @@ def export_csv_endpoint(request: Request, session_id: str):
 
 @app.get("/api/sessions/{session_id}/export/pdf")
 @limiter.limit("10/minute")
-def export_pdf_endpoint(request: Request, session_id: str):
+def export_pdf_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Export a session as PDF."""
-    conn = get_conn()
-    try:
-        session = get_session(conn, session_id)
-    finally:
-        conn.close()
+    session = get_session(conn, session_id)
 
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")

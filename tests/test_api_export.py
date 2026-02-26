@@ -39,22 +39,26 @@ def sample_session():
 
 @pytest.fixture
 def mock_deps(sample_session):
-    """Patch get_conn and get_session, return the FastAPI test client."""
+    """Override get_db dependency and patch get_session, return the FastAPI test client."""
+    mock_conn = MagicMock()
+
     with (
-        patch("focus_groups.api.get_conn") as mock_get_conn,
         patch("focus_groups.api.get_session") as mock_get_session,
     ):
-        mock_get_conn.return_value = MagicMock()
         mock_get_session.return_value = sample_session
 
-        from focus_groups.api import app
+        from focus_groups.api import app, get_db
+        app.dependency_overrides[get_db] = lambda: mock_conn
+        app.state.limiter.reset()
         client = TestClient(app)
 
         yield {
             "client": client,
-            "get_conn": mock_get_conn,
+            "conn": mock_conn,
             "get_session": mock_get_session,
         }
+
+        app.dependency_overrides.clear()
 
 
 # ── CSV endpoint ─────────────────────────────────────────────────────────────
