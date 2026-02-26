@@ -7,6 +7,7 @@ Run with: uvicorn focus_groups.api:app --reload
 from __future__ import annotations
 
 from io import BytesIO
+from typing import Literal, Optional
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -14,7 +15,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from focus_groups.export import export_csv, export_pdf
 from focus_groups.personas.cards import PersonaCard
@@ -31,6 +32,7 @@ from focus_groups.wtp.gabor_granger import (
     compute_demand_curve,
 )
 from focus_groups.wtp.segmentation import segment_psm_by, segment_demand_by
+from focus_groups.wtp.pricing_models import build_hybrid_price_points, normalize_for_display
 from focus_groups.sessions import (
     count_sessions,
     create_session,
@@ -76,8 +78,19 @@ class RerunRequest(BaseModel):
 
 
 class WtpRequest(BaseModel):
+    pricing_model: Literal["one_time", "subscription", "hybrid"] = "one_time"
     price_points: list[int] = []
+    upfront_price_points: Optional[list[float]] = None
+    subscription_price_points: Optional[list[float]] = None
+    billing_interval: Optional[Literal["monthly", "annual"]] = "monthly"
     segment_by: str = "income_bracket"
+
+    @field_validator("upfront_price_points", "subscription_price_points", mode="after")
+    @classmethod
+    def hybrid_fields_required(cls, v, info):
+        if info.data.get("pricing_model") == "hybrid" and v is None:
+            raise ValueError("hybrid model requires both upfront and subscription price points")
+        return v
 
 
 def _derive_price_points(psm_pts: dict, n: int = 7) -> list[int]:
@@ -380,19 +393,33 @@ def run_wtp_endpoint(session_id: str, req: WtpRequest):
 
     try:
         client = get_client()
+        pricing_model = req.pricing_model
 
         # Van Westendorp PSM
-        psm_raw = collect_psm_responses(client, cards, product)
+        psm_raw = collect_psm_responses(client, cards, product, pricing_model=pricing_model)
         psm_curves = compute_psm_curves(psm_raw)
         psm_pts = find_price_points(psm_curves)
+
+        # Build hybrid tiers if applicable
+        hybrid_tiers = None
+        if pricing_model == "hybrid":
+            hybrid_tiers = build_hybrid_price_points(
+                req.upfront_price_points, req.subscription_price_points
+            )
 
         # Derive Gabor-Granger price points from PSM if not provided
         price_points = req.price_points
         if not price_points:
-            price_points = _derive_price_points(psm_pts)
+            if pricing_model == "hybrid" and hybrid_tiers:
+                price_points = [t["total_12m"] for t in hybrid_tiers]
+            else:
+                price_points = _derive_price_points(psm_pts)
 
         # Gabor-Granger
-        demand_raw = collect_demand_responses(client, cards, product, price_points)
+        demand_raw = collect_demand_responses(
+            client, cards, product, price_points,
+            pricing_model=pricing_model, hybrid_tiers=hybrid_tiers,
+        )
         demand_curve = compute_demand_curve(demand_raw, price_points)
 
         # Segmented analysis
@@ -421,9 +448,11 @@ def run_wtp_endpoint(session_id: str, req: WtpRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"WTP analysis failed: {e}")
 
-    return {
+    # Build response
+    result = {
         "session_id": session_id,
         "num_personas": len(cards),
+        "pricing_model": pricing_model,
         "van_westendorp": {
             "responses": psm_raw,
             "curves": psm_curves,
@@ -440,6 +469,13 @@ def run_wtp_endpoint(session_id: str, req: WtpRequest):
             "demand": segment_demand_results,
         },
     }
+
+    # Add hybrid-specific fields
+    if pricing_model == "hybrid" and hybrid_tiers:
+        result["hybrid_tiers"] = hybrid_tiers
+        result["normalized_price_points"] = sorted(t["total_12m"] for t in hybrid_tiers)
+
+    return result
 
 
 @app.get("/api/sessions/{session_id}/export/csv")

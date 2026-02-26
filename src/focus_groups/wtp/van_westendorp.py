@@ -8,6 +8,8 @@ acceptable price range.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import anthropic
 
@@ -18,14 +20,31 @@ from focus_groups.wtp.parsing import extract_json
 
 PSM_KEYS = ("too_cheap", "cheap", "expensive", "too_expensive")
 
+WTP_PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+
+
+def _load_wtp_template(filename: str) -> str:
+    """Load a prompt template from the wtp/prompts directory."""
+    path = WTP_PROMPTS_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"WTP prompt template not found: {path}")
+    return path.read_text().strip()
+
 
 def collect_psm_responses(
     client: anthropic.Anthropic,
     cards: list[PersonaCard],
     product_description: str,
+    pricing_model: str = "one_time",
 ) -> list[dict]:
     """
     Ask each persona the four Van Westendorp questions via Claude.
+
+    Args:
+        client: Anthropic API client.
+        cards: List of PersonaCards to query.
+        product_description: Description of the product being evaluated.
+        pricing_model: One of "one_time", "subscription", "hybrid".
 
     Returns:
         List of dicts with keys: post_id, demographics, too_cheap, cheap,
@@ -34,7 +53,12 @@ def collect_psm_responses(
     if not cards:
         return []
 
-    template = load_prompt_template("van_westendorp.txt")
+    # Try model-specific template, fall back to generic
+    try:
+        template = _load_wtp_template(f"van_westendorp_{pricing_model}.txt")
+    except FileNotFoundError:
+        template = load_prompt_template("van_westendorp.txt")
+
     results = []
 
     for card in cards:

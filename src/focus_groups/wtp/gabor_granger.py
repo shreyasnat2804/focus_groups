@@ -8,6 +8,8 @@ would buy at each price.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import anthropic
 
 from focus_groups.personas.cards import PersonaCard
@@ -15,15 +17,35 @@ from focus_groups.personas.profiles import build_system_prompt, load_prompt_temp
 from focus_groups.claude import MODEL, MAX_TOKENS
 from focus_groups.wtp.parsing import extract_json
 
+WTP_PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+
+
+def _load_wtp_template(filename: str) -> str:
+    """Load a prompt template from the wtp/prompts directory."""
+    path = WTP_PROMPTS_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"WTP prompt template not found: {path}")
+    return path.read_text().strip()
+
 
 def collect_demand_responses(
     client: anthropic.Anthropic,
     cards: list[PersonaCard],
     product_description: str,
     price_points: list[int],
+    pricing_model: str = "one_time",
+    hybrid_tiers: list[dict] | None = None,
 ) -> list[dict]:
     """
     Ask each persona whether they would buy at each price point via Claude.
+
+    Args:
+        client: Anthropic API client.
+        cards: List of PersonaCards to query.
+        product_description: Description of the product being evaluated.
+        price_points: List of price points to test (12m totals for hybrid).
+        pricing_model: One of "one_time", "subscription", "hybrid".
+        hybrid_tiers: For hybrid model, list of {upfront, monthly, total_12m} dicts.
 
     Returns:
         List of dicts with keys: post_id, demographics, decisions
@@ -32,11 +54,29 @@ def collect_demand_responses(
     if not cards:
         return []
 
-    template = load_prompt_template("gabor_granger.txt")
+    # Try model-specific template, fall back to generic
+    try:
+        template = _load_wtp_template(f"gabor_granger_{pricing_model}.txt")
+    except FileNotFoundError:
+        template = load_prompt_template("gabor_granger.txt")
+
     results = []
 
-    price_points_str = ", ".join(f"${p}" for p in price_points)
-    price_json_template = ", ".join(f'"{p}": true/false' for p in price_points)
+    # Format price points for prompt
+    if pricing_model == "hybrid" and hybrid_tiers:
+        price_points_str = "\n".join(
+            f"  ${t['upfront']} setup + ${t['monthly']}/mo = ${t['total_12m']}/yr total"
+            for t in hybrid_tiers
+        )
+        price_json_template = ", ".join(
+            f'"{t["total_12m"]}": true/false' for t in hybrid_tiers
+        )
+    elif pricing_model == "subscription":
+        price_points_str = ", ".join(f"${p}/mo" for p in price_points)
+        price_json_template = ", ".join(f'"{p}": true/false' for p in price_points)
+    else:
+        price_points_str = ", ".join(f"${p}" for p in price_points)
+        price_json_template = ", ".join(f'"{p}": true/false' for p in price_points)
 
     for card in cards:
         system_prompt = build_system_prompt(card)
