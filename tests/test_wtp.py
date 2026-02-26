@@ -268,6 +268,39 @@ class TestVanWestendorp:
         assert "json" in user_message.lower()
 
 
+# ── Derive Price Points ──────────────────────────────────────────────────────
+
+class TestDerivePricePoints:
+    """Tests for _derive_price_points which generates Gabor-Granger
+    price points from Van Westendorp PSM results."""
+
+    def test_returns_sorted_unique_ints(self):
+        from focus_groups.api import _derive_price_points
+        psm = {"optimal_price": 50, "acceptable_range": [30, 70]}
+        pts = _derive_price_points(psm)
+        assert pts == sorted(set(pts))
+        assert all(isinstance(p, int) for p in pts)
+
+    def test_spans_beyond_acceptable_range(self):
+        from focus_groups.api import _derive_price_points
+        psm = {"optimal_price": 100, "acceptable_range": [80, 120]}
+        pts = _derive_price_points(psm)
+        assert pts[0] < 80
+        assert pts[-1] > 120
+
+    def test_at_least_two_points(self):
+        from focus_groups.api import _derive_price_points
+        psm = {"optimal_price": 10, "acceptable_range": [10, 10]}
+        pts = _derive_price_points(psm)
+        assert len(pts) >= 2
+
+    def test_all_positive(self):
+        from focus_groups.api import _derive_price_points
+        psm = {"optimal_price": 5, "acceptable_range": [2, 8]}
+        pts = _derive_price_points(psm)
+        assert all(p >= 1 for p in pts)
+
+
 # ── Gabor-Granger ────────────────────────────────────────────────────────────
 
 class TestGaborGranger:

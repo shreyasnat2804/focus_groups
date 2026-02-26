@@ -76,8 +76,44 @@ class RerunRequest(BaseModel):
 
 
 class WtpRequest(BaseModel):
-    price_points: list[int] = [49, 99, 199, 299, 499]
+    price_points: list[int] = []
     segment_by: str = "income_bracket"
+
+
+def _derive_price_points(psm_pts: dict, n: int = 7) -> list[int]:
+    """Generate Gabor-Granger price points from Van Westendorp results.
+
+    Spans from ~20% below the acceptable range floor to ~20% above
+    the ceiling, with n evenly spaced points rounded to nice numbers.
+    """
+    low, high = psm_pts["acceptable_range"]
+    optimal = psm_pts["optimal_price"]
+
+    # Extend range 20% beyond the acceptable bounds
+    margin = max((high - low) * 0.2, optimal * 0.1, 1)
+    floor = max(1, low - margin)
+    ceil = high + margin
+
+    step = (ceil - floor) / (n - 1)
+
+    # Round to a "nice" step: nearest 1, 5, 10, 25, 50, 100 etc.
+    nice_steps = [1, 2, 5, 10, 15, 20, 25, 50, 75, 100, 150, 200, 250, 500]
+    nice_step = min(nice_steps, key=lambda s: abs(s - step)) or 1
+
+    # Build points from floor, rounded to nice_step
+    base = max(1, round(floor / nice_step) * nice_step)
+    points = []
+    p = base
+    while p <= ceil + nice_step and len(points) < n + 2:
+        points.append(int(p))
+        p += nice_step
+
+    # Deduplicate and ensure at least 2 points
+    points = sorted(set(points))
+    if len(points) < 2:
+        points = [max(1, int(optimal * 0.5)), int(optimal), int(optimal * 1.5)]
+
+    return points
 
 
 class RenameRequest(BaseModel):
@@ -350,9 +386,14 @@ def run_wtp_endpoint(session_id: str, req: WtpRequest):
         psm_curves = compute_psm_curves(psm_raw)
         psm_pts = find_price_points(psm_curves)
 
+        # Derive Gabor-Granger price points from PSM if not provided
+        price_points = req.price_points
+        if not price_points:
+            price_points = _derive_price_points(psm_pts)
+
         # Gabor-Granger
-        demand_raw = collect_demand_responses(client, cards, product, req.price_points)
-        demand_curve = compute_demand_curve(demand_raw, req.price_points)
+        demand_raw = collect_demand_responses(client, cards, product, price_points)
+        demand_curve = compute_demand_curve(demand_raw, price_points)
 
         # Segmented analysis
         psm_segments = segment_psm_by(psm_raw, req.segment_by)
@@ -372,7 +413,7 @@ def run_wtp_endpoint(session_id: str, req: WtpRequest):
 
         segment_demand_results = {}
         for seg_name, seg_data in demand_segments.items():
-            seg_curve = compute_demand_curve(seg_data, req.price_points)
+            seg_curve = compute_demand_curve(seg_data, price_points)
             segment_demand_results[seg_name] = seg_curve
 
     except Exception as e:

@@ -9,8 +9,6 @@ const SEGMENT_OPTIONS = [
   { value: "gender", label: "Gender" },
 ];
 
-const DEFAULT_PRICES = [49, 99, 199, 299, 499];
-
 export default function PricingAnalysis({ sessionId }) {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,7 +38,6 @@ export default function PricingAnalysis({ sessionId }) {
     setError(null);
     try {
       const data = await runWtpAnalysis(sessionId, {
-        price_points: DEFAULT_PRICES,
         segment_by: segmentBy,
       });
       setResults(data);
