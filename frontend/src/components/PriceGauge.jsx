@@ -1,13 +1,13 @@
 import { PieChart, Pie, Cell } from "recharts";
 
 function getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice) {
-  if (minPrice === maxPrice) return "Only one price point tested — try adding more.";
-  if (optimalPrice <= minPrice) return "At the floor — consider testing lower prices.";
-  if (optimalPrice >= maxPrice) return "You can go higher — the ceiling hasn't been found yet.";
-  if (fillRatio < 0.25) return "Priced conservatively — there's likely room to move up.";
-  if (fillRatio < 0.5) return "Below midpoint — a moderate price increase may work well.";
-  if (fillRatio < 0.75) return "Well-positioned — near the sweet spot for this audience.";
-  return "Near the top of your range — strong pricing power detected.";
+  if (minPrice === maxPrice) return "Only one price point tested. Try adding more.";
+  if (optimalPrice <= minPrice) return "At the floor. Consider testing lower prices.";
+  if (optimalPrice >= maxPrice) return "You can go higher. The ceiling has not been found yet.";
+  if (fillRatio < 0.25) return "Priced conservatively. There is likely room to move up.";
+  if (fillRatio < 0.5) return "Below midpoint. A moderate price increase may work well.";
+  if (fillRatio < 0.75) return "Well-positioned near the sweet spot for this audience.";
+  return "Near the top of your range. Strong pricing power detected.";
 }
 
 export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label }) {

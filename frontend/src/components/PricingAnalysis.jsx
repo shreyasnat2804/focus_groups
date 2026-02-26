@@ -136,16 +136,16 @@ export default function PricingAnalysis({ sessionId }) {
               .split(",")
               .map((s) => parseInt(s.trim(), 10))
               .filter((n) => !isNaN(n) && n > 0);
+
+            if (parsedPoints.length === 0) {
+              return <p className="pricing-analysis-desc">No valid price points entered.</p>;
+            }
+
             const rawOptimal = results.van_westendorp.optimal_price;
-            const snappedOptimal =
-              parsedPoints.length > 0
-                ? parsedPoints.reduce((closest, p) =>
-                    Math.abs(p - rawOptimal) < Math.abs(closest - rawOptimal)
-                      ? p
-                      : closest,
-                    parsedPoints[0]
-                  )
-                : rawOptimal;
+            const snappedOptimal = parsedPoints.reduce((closest, p) =>
+              Math.abs(p - rawOptimal) < Math.abs(closest - rawOptimal) ? p : closest,
+              parsedPoints[0]
+            );
             return (
               <PriceGauge
                 label="Recommended Price"
