@@ -32,12 +32,6 @@ export default function VanWestendorpChart({ curves, pricePoints }) {
     <div className="wtp-chart-container">
       <h3>Van Westendorp Price Sensitivity</h3>
       <div className="wtp-price-summary">
-        {optimal != null && (
-          <div className="wtp-price-badge optimal">
-            <span className="wtp-price-badge-label">Optimal Price</span>
-            <span className="wtp-price-badge-value">${optimal.toFixed(0)}</span>
-          </div>
-        )}
         {rangeLow != null && rangeHigh != null && (
           <div className="wtp-price-badge range">
             <span className="wtp-price-badge-label">Acceptable Range</span>

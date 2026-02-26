@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { runWtpAnalysis } from "../api";
 import VanWestendorpChart from "./VanWestendorpChart";
 import DemandCurveChart from "./DemandCurveChart";
+import PriceGauge from "./PriceGauge";
 
 const SEGMENT_OPTIONS = [
   { value: "income_bracket", label: "Income bracket" },
@@ -20,6 +21,22 @@ export default function PricingAnalysis({ sessionId }) {
   // Config
   const [pricesInput, setPricesInput] = useState(DEFAULT_PRICES);
   const [segmentBy, setSegmentBy] = useState("income_bracket");
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(`wtp_results_${sessionId}`);
+    if (saved) {
+      try {
+        const { results: savedResults, pricesInput: savedPrices, segmentBy: savedSegment } = JSON.parse(saved);
+        setResults(savedResults);
+        setPricesInput(savedPrices);
+        setSegmentBy(savedSegment);
+        setExpanded(true);
+      } catch {
+        // ignore corrupt saved state
+      }
+    }
+  }, [sessionId]);
 
   async function handleRun() {
     setLoading(true);
@@ -43,6 +60,10 @@ export default function PricingAnalysis({ sessionId }) {
       });
       setResults(data);
       setExpanded(true);
+      localStorage.setItem(
+        `wtp_results_${sessionId}`,
+        JSON.stringify({ results: data, pricesInput, segmentBy })
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -108,6 +129,13 @@ export default function PricingAnalysis({ sessionId }) {
           <div className="pricing-results-meta">
             {results.num_personas} personas analyzed
           </div>
+
+          <PriceGauge
+            label="Recommended Price"
+            optimalPrice={results.van_westendorp.optimal_price}
+            minPrice={Math.min(...results.van_westendorp.curves.price_points)}
+            maxPrice={Math.max(...results.van_westendorp.curves.price_points)}
+          />
 
           <VanWestendorpChart
             curves={results.van_westendorp.curves}

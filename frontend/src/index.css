@@ -828,3 +828,32 @@ button:disabled {
   font-size: 1.05rem;
   margin-bottom: 0.5rem;
 }
+
+/* --- Price Gauge --- */
+
+.price-gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 300px;
+  margin: 0 auto 1.5rem;
+}
+
+.price-gauge-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #868e96;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.price-gauge-range {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.8rem;
+  color: #868e96;
+  padding: 0 0.5rem;
+  margin-top: -0.5rem;
+}
