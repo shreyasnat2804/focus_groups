@@ -41,7 +41,15 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
   const showMarker = rawOptimalPrice != null && rawOptimalPrice !== optimalPrice;
   const markerInner = showMarker ? arcPoint(cx, cy, innerRadius + 2, rawFillRatio) : null;
   const markerOuter = showMarker ? arcPoint(cx, cy, outerRadius - 2, rawFillRatio) : null;
-  const markerLabel = showMarker ? arcPoint(cx, cy, outerRadius + 14, rawFillRatio) : null;
+
+  // Place the label outside the arc normally; if it would clip at the top, flip it inside the hole
+  let markerLabel = null;
+  if (showMarker) {
+    const outside = arcPoint(cx, cy, outerRadius + 14, rawFillRatio);
+    markerLabel = outside.y < 8
+      ? arcPoint(cx, cy, innerRadius - 14, rawFillRatio)
+      : outside;
+  }
 
   return (
     <div className="price-gauge-container">
