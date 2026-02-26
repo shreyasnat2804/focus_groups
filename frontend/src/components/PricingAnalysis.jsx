@@ -151,15 +151,10 @@ export default function PricingAnalysis({ sessionId }) {
               );
             }
 
-            const snappedOptimal = parsedPoints.reduce((closest, p) =>
-              Math.abs(p - rawOptimal) < Math.abs(closest - rawOptimal) ? p : closest,
-              parsedPoints[0]
-            );
             return (
               <PriceGauge
                 label="Recommended Price"
-                optimalPrice={snappedOptimal}
-                rawOptimalPrice={rawOptimal}
+                optimalPrice={rawOptimal}
                 minPrice={Math.min(...parsedPoints)}
                 maxPrice={Math.max(...parsedPoints)}
               />

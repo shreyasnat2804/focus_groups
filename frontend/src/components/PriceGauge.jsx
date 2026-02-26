@@ -10,13 +10,11 @@ function getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice) {
   return "Near the top of your range. Strong pricing power detected.";
 }
 
-export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, commentOverride, rawOptimalPrice }) {
-  // Use rawOptimalPrice for fill ratio + comment so snapping to a boundary price
-  // doesn't trigger misleading "at the floor/ceiling" warnings.
-  const priceForLogic = rawOptimalPrice ?? optimalPrice;
+export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, commentOverride }) {
+  // fillRatio clamps naturally: out-of-range prices pin the arc to 0% or 100%
   const fillRatio = Math.min(
     1,
-    Math.max(0, (priceForLogic - minPrice) / (maxPrice - minPrice))
+    Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice))
   );
 
   const data = [
@@ -71,7 +69,7 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
         <span>${minPrice.toFixed(0)}</span>
         <span>${maxPrice.toFixed(0)}</span>
       </div>
-      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(fillRatio, priceForLogic, minPrice, maxPrice)}</p>
+      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice)}</p>
     </div>
   );
 }
