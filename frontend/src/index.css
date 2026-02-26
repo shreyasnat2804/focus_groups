@@ -740,10 +740,6 @@ button:disabled {
   min-width: 140px;
 }
 
-.pricing-prices-input {
-  width: 100%;
-}
-
 .pricing-run-btn {
   white-space: nowrap;
   align-self: flex-end;

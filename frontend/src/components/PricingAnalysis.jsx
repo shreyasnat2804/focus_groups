@@ -9,7 +9,7 @@ const SEGMENT_OPTIONS = [
   { value: "gender", label: "Gender" },
 ];
 
-const DEFAULT_PRICES = "49, 99, 199, 299, 499";
+const DEFAULT_PRICES = [49, 99, 199, 299, 499];
 
 export default function PricingAnalysis({ sessionId }) {
   const [expanded, setExpanded] = useState(false);
@@ -18,7 +18,6 @@ export default function PricingAnalysis({ sessionId }) {
   const [results, setResults] = useState(null);
 
   // Config
-  const [pricesInput, setPricesInput] = useState(DEFAULT_PRICES);
   const [segmentBy, setSegmentBy] = useState("income_bracket");
 
   // Restore from localStorage on mount
@@ -26,10 +25,9 @@ export default function PricingAnalysis({ sessionId }) {
     const saved = localStorage.getItem(`wtp_results_${sessionId}`);
     if (saved) {
       try {
-        const { results: savedResults, pricesInput: savedPrices, segmentBy: savedSegment } = JSON.parse(saved);
+        const { results: savedResults, segmentBy: savedSegment } = JSON.parse(saved);
         setResults(savedResults);
-        setPricesInput(savedPrices);
-        setSegmentBy(savedSegment);
+        if (savedSegment) setSegmentBy(savedSegment);
         setExpanded(true);
       } catch {
         // ignore corrupt saved state
@@ -40,28 +38,16 @@ export default function PricingAnalysis({ sessionId }) {
   async function handleRun() {
     setLoading(true);
     setError(null);
-
-    const pricePoints = pricesInput
-      .split(",")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !isNaN(n) && n > 0);
-
-    if (pricePoints.length === 0) {
-      setError("Enter at least one valid price point.");
-      setLoading(false);
-      return;
-    }
-
     try {
       const data = await runWtpAnalysis(sessionId, {
-        price_points: pricePoints,
+        price_points: DEFAULT_PRICES,
         segment_by: segmentBy,
       });
       setResults(data);
       setExpanded(true);
       localStorage.setItem(
         `wtp_results_${sessionId}`,
-        JSON.stringify({ results: data, pricesInput, segmentBy })
+        JSON.stringify({ results: data, segmentBy })
       );
     } catch (err) {
       setError(err.message);
@@ -93,16 +79,6 @@ export default function PricingAnalysis({ sessionId }) {
       )}
 
       <div className="pricing-config">
-        <label>
-          Price points ($)
-          <input
-            type="text"
-            value={pricesInput}
-            onChange={(e) => setPricesInput(e.target.value)}
-            placeholder="49, 99, 199, 299, 499"
-            className="pricing-prices-input"
-          />
-        </label>
         <label>
           Segment by
           <select value={segmentBy} onChange={(e) => setSegmentBy(e.target.value)}>
