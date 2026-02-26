@@ -16,13 +16,11 @@ function arcPoint(cx, cy, radius, ratio) {
   };
 }
 
-// SVG arc path for a donut segment from ratio startR to endR (0 = left, 1 = right)
 function arcPath(cx, cy, innerR, outerR, startRatio, endRatio) {
   const s1 = arcPoint(cx, cy, outerR, startRatio);
   const s2 = arcPoint(cx, cy, outerR, endRatio);
   const s3 = arcPoint(cx, cy, innerR, endRatio);
   const s4 = arcPoint(cx, cy, innerR, startRatio);
-  // largeArc flag: the arc spans more than 180° when ratio range > 0.5
   const large = (endRatio - startRatio) > 0.5 ? 1 : 0;
   return [
     `M ${s1.x} ${s1.y}`,
@@ -39,66 +37,21 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
   const innerRadius = 80;
   const outerRadius = 120;
 
+  // Arc fill always tracks the snapped price
   const fillRatio = Math.min(1, Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice)));
 
+  // Comment uses the raw price to avoid false floor/ceiling warnings
   const priceForComment = rawOptimalPrice ?? optimalPrice;
-  const rawFillRatio = Math.min(1, Math.max(0, (priceForComment - minPrice) / (maxPrice - minPrice)));
-
-  // Marker for the true recommended price (only shown when different from snapped)
-  const showMarker = rawOptimalPrice != null && rawOptimalPrice !== optimalPrice;
-  const markerInner = showMarker ? arcPoint(cx, cy, innerRadius + 2, rawFillRatio) : null;
-  const markerOuter = showMarker ? arcPoint(cx, cy, outerRadius - 2, rawFillRatio) : null;
-
-  let markerLabel = null;
-  if (showMarker) {
-    const outside = arcPoint(cx, cy, outerRadius + 14, rawFillRatio);
-    markerLabel = outside.y < 8
-      ? arcPoint(cx, cy, innerRadius - 14, rawFillRatio)
-      : outside;
-  }
+  const commentRatio = Math.min(1, Math.max(0, (priceForComment - minPrice) / (maxPrice - minPrice)));
 
   return (
     <div className="price-gauge-container">
       {label && <div className="price-gauge-label">{label}</div>}
       <svg width={300} height={170} viewBox="0 0 300 170">
-        {/* Gray background arc (always full semicircle) */}
-        <path
-          d={arcPath(cx, cy, innerRadius, outerRadius, 0, 1)}
-          fill="#e5e7eb"
-        />
-        {/* Orange fill arc */}
+        <path d={arcPath(cx, cy, innerRadius, outerRadius, 0, 1)} fill="#e5e7eb" />
         {fillRatio > 0 && (
-          <path
-            d={arcPath(cx, cy, innerRadius, outerRadius, 0, fillRatio)}
-            fill="#f97316"
-          />
+          <path d={arcPath(cx, cy, innerRadius, outerRadius, 0, fillRatio)} fill="#f97316" />
         )}
-
-        {/* True recommended price marker */}
-        {showMarker && (
-          <>
-            <line
-              x1={markerInner.x}
-              y1={markerInner.y}
-              x2={markerOuter.x}
-              y2={markerOuter.y}
-              stroke="#1a1a1a"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-            />
-            <text
-              x={markerLabel.x}
-              y={markerLabel.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              style={{ fontSize: "0.65rem", fill: "#1a1a1a", fontWeight: 600 }}
-            >
-              ${rawOptimalPrice.toFixed(0)}
-            </text>
-          </>
-        )}
-
-        {/* Bold price label at center of arc */}
         <text
           x={cx}
           y={cy + 10}
@@ -122,7 +75,10 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
         <span>${minPrice.toFixed(0)}</span>
         <span>${maxPrice.toFixed(0)}</span>
       </div>
-      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(rawFillRatio, priceForComment, minPrice, maxPrice)}</p>
+      {rawOptimalPrice != null && rawOptimalPrice !== optimalPrice && (
+        <p className="price-gauge-raw">AI recommendation: ${rawOptimalPrice.toFixed(0)}</p>
+      )}
+      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(commentRatio, priceForComment, minPrice, maxPrice)}</p>
     </div>
   );
 }

@@ -886,6 +886,13 @@ button:disabled {
   margin-top: -0.5rem;
 }
 
+.price-gauge-raw {
+  font-size: 0.75rem;
+  color: #868e96;
+  text-align: center;
+  margin: 0.25rem 0 0;
+}
+
 .price-gauge-comment {
   font-size: 0.8rem;
   color: #495057;
