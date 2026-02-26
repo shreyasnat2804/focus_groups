@@ -6,6 +6,7 @@ Run with: uvicorn focus_groups.api:app --reload
 
 from __future__ import annotations
 
+import os
 import time
 from contextlib import asynccontextmanager
 from io import BytesIO
@@ -13,6 +14,11 @@ from typing import Literal, Optional
 
 from dotenv import load_dotenv
 load_dotenv()
+
+ALLOWED_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:3000",
+).split(",")
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -81,10 +87,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 
