@@ -53,6 +53,22 @@ export async function permanentlyDeleteSession(id) {
   return resp.json();
 }
 
+export async function renameSession(id, name) {
+  const resp = await fetch(`${BASE}/${id}/name`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+    throw new Error(err.detail || "Rename failed");
+  }
+
+  return resp.json();
+}
+
+
 export async function rerunSession(id, { question, sector, num_personas, demographic_filter }) {
   const body = { question };
   if (sector !== undefined) body.sector = sector;

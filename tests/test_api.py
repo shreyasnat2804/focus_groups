@@ -70,6 +70,7 @@ def mock_deps(sample_cards, sample_responses):
         patch("focus_groups.api.list_sessions") as mock_list,
         patch("focus_groups.api.count_sessions") as mock_count,
         patch("focus_groups.api.update_session_question") as mock_update_q,
+        patch("focus_groups.api.update_session_name") as mock_update_name,
         patch("focus_groups.api.delete_responses") as mock_delete_resp,
     ):
         mock_get_conn.return_value = MagicMock()
@@ -97,6 +98,7 @@ def mock_deps(sample_cards, sample_responses):
             "list_sessions": mock_list,
             "count_sessions": mock_count,
             "update_session_question": mock_update_q,
+            "update_session_name": mock_update_name,
             "delete_responses": mock_delete_resp,
         }
 
@@ -402,6 +404,73 @@ def test_rerun_session_missing_question(mock_deps):
     )
 
     assert resp.status_code == 422
+
+
+# ── PATCH /sessions/{id}/name ────────────────────────────────────────────────
+
+def test_rename_session_success(mock_deps):
+    now = datetime.now(timezone.utc).isoformat()
+    session_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    mock_deps["get_session"].return_value = {
+        "id": session_id,
+        "sector": "tech",
+        "question": "Product: CoolApp\n\nDesc",
+        "num_personas": 2,
+        "status": "completed",
+        "created_at": now,
+        "name": None,
+        "responses": [],
+    }
+
+    resp = mock_deps["client"].patch(
+        f"/api/sessions/{session_id}/name",
+        json={"name": "My CoolApp"},
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["session_id"] == session_id
+    assert data["name"] == "My CoolApp"
+    mock_deps["update_session_name"].assert_called_once_with(
+        mock_deps["get_conn"].return_value, session_id, "My CoolApp"
+    )
+
+
+def test_rename_session_clear_name(mock_deps):
+    now = datetime.now(timezone.utc).isoformat()
+    session_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    mock_deps["get_session"].return_value = {
+        "id": session_id,
+        "sector": "tech",
+        "question": "Product: CoolApp\n\nDesc",
+        "num_personas": 2,
+        "status": "completed",
+        "created_at": now,
+        "name": "Old Name",
+        "responses": [],
+    }
+
+    resp = mock_deps["client"].patch(
+        f"/api/sessions/{session_id}/name",
+        json={"name": None},
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] is None
+    mock_deps["update_session_name"].assert_called_once()
+
+
+def test_rename_session_not_found(mock_deps):
+    mock_deps["get_session"].return_value = None
+
+    resp = mock_deps["client"].patch(
+        "/api/sessions/00000000-0000-0000-0000-000000000000/name",
+        json={"name": "Whatever"},
+    )
+
+    assert resp.status_code == 404
+    mock_deps["update_session_name"].assert_not_called()
 
 
 # ── POST /sessions/{id}/wtp ─────────────────────────────────────────────────

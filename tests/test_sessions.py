@@ -18,6 +18,7 @@ from focus_groups.sessions import (
     list_sessions,
     count_sessions,
     update_session_question,
+    update_session_name,
     delete_responses,
     soft_delete_session,
     restore_session,
@@ -151,7 +152,7 @@ def test_fail_session_sets_status():
 
 def test_get_session_returns_dict():
     now = datetime.now(timezone.utc)
-    session_row = ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", {"age_group": "25-34"}, "Test?", 5, "completed", now, now)
+    session_row = ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", {"age_group": "25-34"}, "Test?", 5, "completed", now, now, None)
     response_rows = [
         (10, 42, "25-34 male", "prompt...", "Response 1", "claude-sonnet-4-20250514", now),
     ]
@@ -184,8 +185,8 @@ def test_get_session_not_found():
 def test_list_sessions_returns_list():
     now = datetime.now(timezone.utc)
     rows = [
-        ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", "Test?", 5, "completed", now, None),
-        ("b2c3d4e5-f6a7-8901-bcde-f12345678901", "financial", "Another?", 3, "running", now, None),
+        ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", "Test?", 5, "completed", now, None, None),
+        ("b2c3d4e5-f6a7-8901-bcde-f12345678901", "financial", "Another?", 3, "running", now, None, None),
     ]
     conn, cursor = _make_conn(fetchall=rows)
 
@@ -209,7 +210,7 @@ def test_list_sessions_empty():
 def test_list_sessions_with_offset():
     now = datetime.now(timezone.utc)
     rows = [
-        ("c3d4e5f6-a7b8-9012-cdef-123456789012", "political", "Third?", 2, "pending", now, None),
+        ("c3d4e5f6-a7b8-9012-cdef-123456789012", "political", "Third?", 2, "pending", now, None, None),
     ]
     conn, cursor = _make_conn(fetchall=rows)
 
@@ -450,3 +451,96 @@ def test_count_sessions_with_sector():
 
     sql = cursor.execute.call_args[0][0]
     assert "sector = %s" in sql
+
+
+# ── update_session_name ──────────────────────────────────────────────────────
+
+def test_update_session_name():
+    conn, cursor = _make_conn()
+    sid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    update_session_name(conn, sid, "My Cool Product")
+
+    sql = cursor.execute.call_args[0][0]
+    assert "UPDATE focus_group_sessions" in sql
+    assert "name" in sql
+    params = cursor.execute.call_args[0][1]
+    assert params == ("My Cool Product", sid)
+    conn.commit.assert_called_once()
+
+
+def test_update_session_name_to_null():
+    conn, cursor = _make_conn()
+    sid = "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+
+    update_session_name(conn, sid, None)
+
+    params = cursor.execute.call_args[0][1]
+    assert params[0] is None
+    assert params[1] == sid
+    conn.commit.assert_called_once()
+
+
+# ── get_session includes name ─────────────────────────────────────────────────
+
+def test_get_session_includes_name():
+    now = datetime.now(timezone.utc)
+    # row includes name as 9th column (index 8)
+    session_row = (
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",  # id
+        "tech",                                   # sector
+        {"age_group": "25-34"},                   # demographic_filter
+        "Product: CoolApp\n\nDescription",        # question
+        5,                                         # num_personas
+        "completed",                               # status
+        now,                                       # created_at
+        now,                                       # completed_at
+        "CoolApp Custom Name",                    # name
+    )
+    conn, cursor = _make_conn()
+    cursor.fetchone.return_value = session_row
+    cursor.fetchall.return_value = []
+
+    result = get_session(conn, "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+
+    assert result is not None
+    assert result["name"] == "CoolApp Custom Name"
+
+
+def test_get_session_name_can_be_none():
+    now = datetime.now(timezone.utc)
+    session_row = (
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "tech",
+        {},
+        "Product: App\n\nDesc",
+        5,
+        "completed",
+        now,
+        now,
+        None,  # name is NULL
+    )
+    conn, cursor = _make_conn()
+    cursor.fetchone.return_value = session_row
+    cursor.fetchall.return_value = []
+
+    result = get_session(conn, "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+
+    assert result["name"] is None
+
+
+# ── list_sessions includes name ───────────────────────────────────────────────
+
+def test_list_sessions_includes_name():
+    now = datetime.now(timezone.utc)
+    # rows now include name as 8th column (index 7)
+    rows = [
+        ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "tech", "Test?", 5, "completed", now, None, "Custom Name"),
+        ("b2c3d4e5-f6a7-8901-bcde-f12345678901", "financial", "Another?", 3, "running", now, None, None),
+    ]
+    conn, cursor = _make_conn(fetchall=rows)
+
+    result = list_sessions(conn, limit=10)
+
+    assert result[0]["name"] == "Custom Name"
+    assert result[1]["name"] is None

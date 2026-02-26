@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSession, createSession, rerunSession } from "../api";
+import { getSession, createSession, rerunSession, renameSession } from "../api";
 import ResponseCard from "../components/ResponseCard";
 import ExportButtons from "../components/ExportButtons";
 import PricingAnalysis from "../components/PricingAnalysis";
@@ -19,6 +19,11 @@ export default function PitchResults() {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [error, setError] = useState(null);
+
+  // Session name editing state
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const nameInputRef = useRef(null);
 
   // Pitch editing state
   const [pitchExpanded, setPitchExpanded] = useState(false);
@@ -39,6 +44,7 @@ export default function PitchResults() {
     getSession(id)
       .then((s) => {
         setSession(s);
+        setNameValue(s.name ?? parseProductName(s.question));
         setEditedPitch(parseProductDescription(s.question));
         // Initialize composition from session
         setSector(s.sector || "");
@@ -54,8 +60,44 @@ export default function PitchResults() {
   if (!session) return <p className="loading">Loading session...</p>;
 
   const productName = parseProductName(session.question);
+  const displayName = nameValue || productName;
   const responses = session.responses || [];
   const sentiments = aggregateSentiments(responses);
+
+  function startEditingName() {
+    setEditingName(true);
+    // Focus the input after render
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  }
+
+  async function commitName() {
+    const trimmed = nameValue.trim();
+    const resolved = trimmed || null;
+    setEditingName(false);
+    if (resolved === (session.name ?? null) || (!resolved && !session.name && trimmed === productName)) {
+      // No real change
+      setNameValue(session.name ?? productName);
+      return;
+    }
+    try {
+      await renameSession(id, resolved);
+      setSession((prev) => ({ ...prev, name: resolved }));
+      setNameValue(resolved ?? productName);
+    } catch {
+      // Revert on error
+      setNameValue(session.name ?? productName);
+    }
+  }
+
+  function handleNameKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitName();
+    } else if (e.key === "Escape") {
+      setEditingName(false);
+      setNameValue(session.name ?? productName);
+    }
+  }
 
   function buildQuestion() {
     return `Product: ${productName}\n\n${editedPitch.trim()}`;
@@ -112,7 +154,25 @@ export default function PitchResults() {
 
   return (
     <div>
-      <h1>{productName}</h1>
+      {editingName ? (
+        <input
+          ref={nameInputRef}
+          className="session-name-input"
+          value={nameValue}
+          onChange={(e) => setNameValue(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={handleNameKeyDown}
+          autoFocus
+        />
+      ) : (
+        <h1
+          className="session-name-heading"
+          onClick={startEditingName}
+          title="Click to rename"
+        >
+          {displayName}
+        </h1>
+      )}
       <div className="pitch-meta">
         {session.sector && <span className="sector-tag">{session.sector}</span>}
         <span>{session.num_personas} personas</span>

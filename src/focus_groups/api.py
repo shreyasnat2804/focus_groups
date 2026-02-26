@@ -40,6 +40,7 @@ from focus_groups.sessions import (
     get_session,
     list_sessions,
     update_session_question,
+    update_session_name,
     delete_responses,
     soft_delete_session,
     restore_session,
@@ -77,6 +78,10 @@ class RerunRequest(BaseModel):
 class WtpRequest(BaseModel):
     price_points: list[int] = [49, 99, 199, 299, 499]
     segment_by: str = "income_bracket"
+
+
+class RenameRequest(BaseModel):
+    name: str | None
 
 
 class SessionCreated(BaseModel):
@@ -224,6 +229,20 @@ def permanently_delete_session_endpoint(session_id: str):
     finally:
         conn.close()
     return {"status": "permanently_deleted", "session_id": session_id}
+
+
+@app.patch("/api/sessions/{session_id}/name")
+def rename_session_endpoint(session_id: str, req: RenameRequest):
+    """Update the display name for a session."""
+    conn = get_conn()
+    try:
+        session = get_session(conn, session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found.")
+        update_session_name(conn, session_id, req.name)
+    finally:
+        conn.close()
+    return {"session_id": session_id, "name": req.name}
 
 
 @app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)

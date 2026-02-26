@@ -108,7 +108,7 @@ def get_session(conn, session_id: str) -> dict | None:
         cur.execute(
             """
             SELECT id, sector, demographic_filter, question,
-                   num_personas, status, created_at, completed_at
+                   num_personas, status, created_at, completed_at, name
             FROM focus_group_sessions
             WHERE id = %s
             """,
@@ -141,6 +141,7 @@ def get_session(conn, session_id: str) -> dict | None:
         "status": row[5],
         "created_at": row[6],
         "completed_at": row[7],
+        "name": row[8],
         "responses": [
             {
                 "id": r[0],
@@ -195,7 +196,7 @@ def list_sessions(
     """Return recent sessions (without responses) ordered by newest first."""
     where, params = _build_filter_clause(search=search, sector=sector, deleted=deleted)
     query = f"""
-        SELECT id, sector, question, num_personas, status, created_at, deleted_at
+        SELECT id, sector, question, num_personas, status, created_at, deleted_at, name
         FROM focus_group_sessions
         WHERE {where}
         ORDER BY created_at DESC
@@ -216,6 +217,7 @@ def list_sessions(
             "status": r[4],
             "created_at": r[5],
             "deleted_at": r[6],
+            "name": r[7],
         }
         for r in rows
     ]
@@ -246,6 +248,20 @@ def update_session_question(conn, session_id: str, question: str) -> None:
             WHERE id = %s
             """,
             (question, session_id),
+        )
+    conn.commit()
+
+
+def update_session_name(conn, session_id: str, name: str | None) -> None:
+    """Update the display name for a session. Pass None to clear it."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE focus_group_sessions
+            SET name = %s
+            WHERE id = %s
+            """,
+            (name, session_id),
         )
     conn.commit()
 
