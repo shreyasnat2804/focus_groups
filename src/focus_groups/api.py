@@ -6,6 +6,7 @@ Run with: uvicorn focus_groups.api:app --reload
 
 from __future__ import annotations
 
+import time
 from io import BytesIO
 from typing import Literal, Optional
 
@@ -54,6 +55,9 @@ from focus_groups.sessions import (
     purge_expired_sessions,
     permanently_delete_session,
 )
+
+_last_purge: float = 0
+PURGE_INTERVAL = 3600  # seconds — purge expired sessions at most once per hour
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -235,8 +239,11 @@ def list_sessions_endpoint(
     """List recent sessions with pagination, search, and filters."""
     conn = get_conn()
     try:
-        # Purge sessions deleted more than 30 days ago
-        purge_expired_sessions(conn)
+        # Purge sessions deleted more than 30 days ago (throttled to once per hour)
+        global _last_purge
+        if time.time() - _last_purge > PURGE_INTERVAL:
+            purge_expired_sessions(conn)
+            _last_purge = time.time()
 
         total = count_sessions(conn, search=search, sector=sector, deleted=deleted)
         if offset >= total and total > 0:

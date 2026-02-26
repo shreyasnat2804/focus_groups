@@ -8,13 +8,15 @@ that persona's voice.
 
 from __future__ import annotations
 
+import os
+
 import anthropic
 
 from focus_groups.personas.cards import PersonaCard
 from focus_groups.personas.profiles import build_system_prompt, format_demographic_summary
 
-MODEL = "claude-sonnet-4-20250514"
-MAX_TOKENS = 1024
+MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "1024"))
 
 
 def get_client() -> anthropic.Anthropic:

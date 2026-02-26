@@ -3,8 +3,11 @@ Database connection and insert helpers.
 Reads connection config from environment (falls back to localdev defaults).
 """
 
+import logging
 import os
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 import psycopg2
 from psycopg2.extras import execute_values, Json
@@ -227,6 +230,8 @@ def get_posts_with_embeddings(
         FROM posts p
         JOIN post_embeddings pe ON pe.post_id = p.id
         WHERE {where_sql}
+        -- ORDER BY RANDOM() is fine at current scale (~30K rows).
+        -- If data grows 10x+, switch to TABLESAMPLE SYSTEM or a two-pass approach.
         ORDER BY RANDOM()
         LIMIT %s
     """
@@ -380,15 +385,21 @@ def insert_tags(conn, tags: list[dict], value_ids: dict = None) -> int:
     if value_ids is None:
         value_ids = load_demographic_value_ids(conn)
 
-    rows = [
-        (
-            t["post_id"],
-            value_ids[(t["dimension"], t["value"])],
-            t["confidence"],
-            t["method"],
-        )
-        for t in tags
-    ]
+    rows = []
+    skipped = 0
+    for t in tags:
+        key = (t["dimension"], t["value"])
+        vid = value_ids.get(key)
+        if vid is None:
+            skipped += 1
+            continue
+        rows.append((t["post_id"], vid, t["confidence"], t["method"]))
+
+    if skipped:
+        logger.warning("Skipped %d tags with unknown dimension/value", skipped)
+
+    if not rows:
+        return 0
 
     with conn.cursor() as cur:
         execute_values(
