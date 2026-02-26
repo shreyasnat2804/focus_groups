@@ -25,8 +25,11 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
   const innerRadius = 80;
   const outerRadius = 120;
 
-  // Snapped price drives the arc fill and center label
-  const fillRatio = Math.min(1, Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice)));
+  // Snapped price drives the arc fill and center label.
+  // Clamp away from exact 0 and 1: recharts drops a Pie segment entirely when its value is 0,
+  // which causes the orange (or gray) arc to vanish at the floor/ceiling.
+  const EPSILON = 0.005;
+  const fillRatio = Math.min(1 - EPSILON, Math.max(EPSILON, (optimalPrice - minPrice) / (maxPrice - minPrice)));
 
   // Raw price drives the comment logic
   const priceForComment = rawOptimalPrice ?? optimalPrice;
