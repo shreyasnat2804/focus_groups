@@ -162,7 +162,7 @@ export default function PitchList() {
 }
 
 function PitchCard({ session, isDeleted, onDelete, onRestore, onPermanentDelete }) {
-  const name = parseProductName(session.question);
+  const name = session.name ?? parseProductName(session.question);
   const responses = session.responses || [];
   const hasSentiment = responses.length > 0;
   const sentiments = hasSentiment ? aggregateSentiments(responses) : null;
