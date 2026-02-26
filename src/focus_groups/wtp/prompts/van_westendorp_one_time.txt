@@ -1,0 +1,13 @@
+Consider the following product (one-time purchase):
+
+{product_description}
+
+As this person, answer these four pricing questions with dollar amounts that reflect your honest perception. Think about your income, spending habits, and how much value this product would provide to someone like you.
+
+1. At what price would this product be so cheap that you would question its quality? (too cheap)
+2. At what price would this product be a bargain -- a great buy for the money? (cheap/bargain)
+3. At what price would this product start to seem expensive, but you might still consider buying it? (expensive but acceptable)
+4. At what price would this product be too expensive to ever consider? (too expensive)
+
+Respond with ONLY a JSON object in this exact format, no other text:
+{{"too_cheap": <dollar_amount>, "cheap": <dollar_amount>, "expensive": <dollar_amount>, "too_expensive": <dollar_amount>}}

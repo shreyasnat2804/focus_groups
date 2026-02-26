@@ -1,0 +1,10 @@
+Consider the following product (monthly subscription):
+
+{product_description}
+
+As this person, for each of the following monthly price points, decide whether you would subscribe to this service at that price. Consider your income, recurring expenses, and how much ongoing value this service provides to someone like you.
+
+Monthly price points: {price_points_str}
+
+Respond with ONLY a JSON object mapping each monthly price to true (would subscribe) or false (would not subscribe), no other text:
+{{{price_json_template}}}

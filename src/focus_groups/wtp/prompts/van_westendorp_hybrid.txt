@@ -1,0 +1,15 @@
+Consider the following product (upfront fee + monthly subscription):
+
+{product_description}
+
+You are evaluating a product with a setup fee plus an ongoing monthly subscription. When thinking about price thresholds, consider the combined annual cost (setup fee + 12 months of subscription).
+
+As this person, answer these four pricing questions with annual total dollar amounts that reflect your honest perception. Think about your income, spending habits, and how much value this product would provide over a year.
+
+1. At what annual total cost would this product be so cheap that you would question its quality? (too cheap)
+2. At what annual total cost would this product be a bargain -- a great value for the money? (cheap/bargain)
+3. At what annual total cost would this product start to seem expensive, but you might still consider buying? (expensive but acceptable)
+4. At what annual total cost would this product be too expensive to ever consider? (too expensive)
+
+Respond with ONLY a JSON object in this exact format, no other text:
+{{"too_cheap": <dollar_amount>, "cheap": <dollar_amount>, "expensive": <dollar_amount>, "too_expensive": <dollar_amount>}}
