@@ -9,6 +9,7 @@ import { ResultsDemoScene } from "./scenes/ResultsDemoScene";
 import { FeaturesScene } from "./scenes/FeaturesScene";
 import { ClosingScene } from "./scenes/ClosingScene";
 import { LoraScene } from "./scenes/LoraScene";
+import { PricingScene } from "./scenes/PricingScene";
 
 const TRANSITION_DURATION = 15;
 const fadeTransition = fade();
@@ -22,6 +23,7 @@ const scenes = [
   { component: LoraScene, duration: 210 },
   { component: PitchDemoScene, duration: 180 },
   { component: ResultsDemoScene, duration: 180 },
+  { component: PricingScene, duration: 210 },
   { component: FeaturesScene, duration: 150 },
   { component: ClosingScene, duration: 120 },
 ];
