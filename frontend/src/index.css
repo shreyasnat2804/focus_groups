@@ -859,15 +859,12 @@ button:disabled {
 
 /* --- Price Gauge --- */
 
-.price-gauge-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 300px;
+.recommended-price {
+  text-align: center;
   margin: 0 auto 1.5rem;
 }
 
-.price-gauge-label {
+.recommended-price-label {
   font-size: 0.8rem;
   font-weight: 500;
   color: #868e96;
@@ -876,27 +873,14 @@ button:disabled {
   margin-bottom: 0.25rem;
 }
 
-.price-gauge-range {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  font-size: 0.8rem;
-  color: #868e96;
-  padding: 0 0.5rem;
-  margin-top: -0.5rem;
+.recommended-price-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
 }
 
-.price-gauge-raw {
-  font-size: 0.75rem;
+.recommended-price-range {
+  font-size: 0.85rem;
   color: #868e96;
-  text-align: center;
-  margin: 0.25rem 0 0;
-}
-
-.price-gauge-comment {
-  font-size: 0.8rem;
-  color: #495057;
-  text-align: center;
-  margin-top: 0.5rem;
-  font-style: italic;
+  margin-top: 0.25rem;
 }

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { runWtpAnalysis } from "../api";
 import VanWestendorpChart from "./VanWestendorpChart";
 import DemandCurveChart from "./DemandCurveChart";
-import PriceGauge from "./PriceGauge";
 
 const SEGMENT_OPTIONS = [
   { value: "income_bracket", label: "Income bracket" },
@@ -130,41 +129,16 @@ export default function PricingAnalysis({ sessionId }) {
             {results.num_personas} personas analyzed
           </div>
 
-          {(() => {
-            // Snap the raw optimal price to the closest user-inputted price point
-            const parsedPoints = pricesInput
-              .split(",")
-              .map((s) => parseInt(s.trim(), 10))
-              .filter((n) => !isNaN(n) && n > 0);
-
-            const rawOptimal = results.van_westendorp.optimal_price;
-
-            if (parsedPoints.length === 0) {
-              return (
-                <PriceGauge
-                  label="Recommended Price"
-                  optimalPrice={rawOptimal}
-                  minPrice={Math.min(...results.van_westendorp.curves.price_points)}
-                  maxPrice={Math.max(...results.van_westendorp.curves.price_points)}
-                  commentOverride="Add price points to see your range!"
-                />
-              );
-            }
-
-            const snappedOptimal = parsedPoints.reduce((closest, p) =>
-              Math.abs(p - rawOptimal) < Math.abs(closest - rawOptimal) ? p : closest,
-              parsedPoints[0]
-            );
-            return (
-              <PriceGauge
-                label="Recommended Price"
-                optimalPrice={snappedOptimal}
-                rawOptimalPrice={rawOptimal}
-                minPrice={Math.min(...parsedPoints)}
-                maxPrice={Math.max(...parsedPoints)}
-              />
-            );
-          })()}
+          <div className="recommended-price">
+            <div className="recommended-price-label">Recommended Price</div>
+            <div className="recommended-price-value">
+              ${results.van_westendorp.optimal_price.toFixed(0)}
+            </div>
+            <div className="recommended-price-range">
+              Acceptable range: ${results.van_westendorp.acceptable_range[0].toFixed(0)}
+              {" - "}${results.van_westendorp.acceptable_range[1].toFixed(0)}
+            </div>
+          </div>
 
           <VanWestendorpChart
             curves={results.van_westendorp.curves}
