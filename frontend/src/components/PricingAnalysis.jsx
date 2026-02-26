@@ -335,9 +335,9 @@ export default function PricingAnalysis({ sessionId }) {
           />
 
           {/* Segmented PSM summary */}
-          {results.segments?.psm && Object.keys(results.segments.psm).length > 0 && (
+          {results.segments?.psm && Object.keys(results.segments.psm).filter((n) => n !== "unknown").length > 0 && (
             <div className="wtp-segment-summary">
-              <h3>Price Sensitivity by {results.segments.dimension?.replace("_", " ")}</h3>
+              <h3>Price Sensitivity by {results.segments.dimension?.replaceAll("_", " ")}</h3>
               <table className="wtp-segment-table">
                 <thead>
                   <tr>
@@ -349,10 +349,11 @@ export default function PricingAnalysis({ sessionId }) {
                 </thead>
                 <tbody>
                   {Object.entries(results.segments.psm)
+                    .filter(([name]) => name !== "unknown")
                     .sort(([a], [b]) => a.localeCompare(b))
                     .map(([name, seg]) => (
                       <tr key={name}>
-                        <td>{name.replace("_", " ")}</td>
+                        <td>{name.replaceAll("_", " ")}</td>
                         <td>{seg.n}</td>
                         <td>{formatCurrency(seg.optimal_price)}</td>
                         <td>

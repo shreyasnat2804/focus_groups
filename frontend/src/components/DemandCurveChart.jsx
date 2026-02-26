@@ -44,9 +44,11 @@ export default function DemandCurveChart({
     "Would Buy": demandCurve.demand_pct[i],
   }));
 
-  // Segmented demand data
-  const hasSegments = segmentDemand && Object.keys(segmentDemand).length > 0;
-  const segmentNames = hasSegments ? Object.keys(segmentDemand).sort() : [];
+  // Segmented demand data (exclude "unknown" — untagged personas)
+  const segmentNames = segmentDemand
+    ? Object.keys(segmentDemand).filter((n) => n !== "unknown").sort()
+    : [];
+  const hasSegments = segmentNames.length > 0;
 
   let segmentData = [];
   if (hasSegments) {
@@ -112,7 +114,7 @@ export default function DemandCurveChart({
       {/* Segmented demand */}
       {hasSegments && (
         <>
-          <h4>Demand by {segmentDimension?.replace("_", " ") || "segment"}</h4>
+          <h4>Demand by {segmentDimension?.replaceAll("_", " ") || "segment"}</h4>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={segmentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
