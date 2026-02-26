@@ -18,6 +18,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "fpdf2>=2.7",
+    "slowapi>=0.1.9",
 ]
 
 [project.scripts]

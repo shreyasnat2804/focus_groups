@@ -12,10 +12,13 @@ from typing import Literal, Optional
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from focus_groups.auth import require_api_key
 
@@ -52,11 +55,15 @@ from focus_groups.sessions import (
     permanently_delete_session,
 )
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="Focus Groups API",
     version="0.1.0",
     dependencies=[Depends(require_api_key)],
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -150,7 +157,8 @@ class SessionCreated(BaseModel):
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.post("/api/sessions", response_model=SessionCreated)
-def create_session_endpoint(req: SessionRequest):
+@limiter.limit("5/minute")
+def create_session_endpoint(request: Request, req: SessionRequest):
     """
     Create a focus group session: select personas, run Claude, store results.
     """
@@ -199,7 +207,8 @@ def create_session_endpoint(req: SessionRequest):
 
 
 @app.get("/api/sessions/{session_id}")
-def get_session_endpoint(session_id: str):
+@limiter.limit("30/minute")
+def get_session_endpoint(request: Request, session_id: str):
     """Get a session with all its responses."""
     conn = get_conn()
     try:
@@ -214,7 +223,9 @@ def get_session_endpoint(session_id: str):
 
 
 @app.get("/api/sessions")
+@limiter.limit("30/minute")
 def list_sessions_endpoint(
+    request: Request,
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     search: str | None = Query(default=None),
@@ -247,7 +258,8 @@ def list_sessions_endpoint(
 
 
 @app.delete("/api/sessions/{session_id}")
-def delete_session_endpoint(session_id: str):
+@limiter.limit("20/minute")
+def delete_session_endpoint(request: Request, session_id: str):
     """Soft delete a session (move to trash)."""
     conn = get_conn()
     try:
@@ -261,7 +273,8 @@ def delete_session_endpoint(session_id: str):
 
 
 @app.post("/api/sessions/{session_id}/restore")
-def restore_session_endpoint(session_id: str):
+@limiter.limit("20/minute")
+def restore_session_endpoint(request: Request, session_id: str):
     """Restore a soft-deleted session from trash."""
     conn = get_conn()
     try:
@@ -275,7 +288,8 @@ def restore_session_endpoint(session_id: str):
 
 
 @app.delete("/api/sessions/{session_id}/permanent")
-def permanently_delete_session_endpoint(session_id: str):
+@limiter.limit("20/minute")
+def permanently_delete_session_endpoint(request: Request, session_id: str):
     """Permanently delete a session (cannot be undone)."""
     conn = get_conn()
     try:
@@ -289,7 +303,8 @@ def permanently_delete_session_endpoint(session_id: str):
 
 
 @app.patch("/api/sessions/{session_id}/name")
-def rename_session_endpoint(session_id: str, req: RenameRequest):
+@limiter.limit("20/minute")
+def rename_session_endpoint(request: Request, session_id: str, req: RenameRequest):
     """Update the display name for a session."""
     conn = get_conn()
     try:
@@ -303,7 +318,8 @@ def rename_session_endpoint(session_id: str, req: RenameRequest):
 
 
 @app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)
-def rerun_session_endpoint(session_id: str, req: RerunRequest):
+@limiter.limit("5/minute")
+def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest):
     """
     Re-run a session: update question, delete old responses, re-select
     personas, run Claude, save new responses.
@@ -359,7 +375,8 @@ def rerun_session_endpoint(session_id: str, req: RerunRequest):
 
 
 @app.post("/api/sessions/{session_id}/wtp")
-def run_wtp_endpoint(session_id: str, req: WtpRequest):
+@limiter.limit("5/minute")
+def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest):
     """
     Run Willingness to Pay analysis on an existing session's personas.
 
@@ -487,7 +504,8 @@ def run_wtp_endpoint(session_id: str, req: WtpRequest):
 
 
 @app.get("/api/sessions/{session_id}/export/csv")
-def export_csv_endpoint(session_id: str):
+@limiter.limit("10/minute")
+def export_csv_endpoint(request: Request, session_id: str):
     """Export a session as CSV."""
     conn = get_conn()
     try:
@@ -507,7 +525,8 @@ def export_csv_endpoint(session_id: str):
 
 
 @app.get("/api/sessions/{session_id}/export/pdf")
-def export_pdf_endpoint(session_id: str):
+@limiter.limit("10/minute")
+def export_pdf_endpoint(request: Request, session_id: str):
     """Export a session as PDF."""
     conn = get_conn()
     try:
