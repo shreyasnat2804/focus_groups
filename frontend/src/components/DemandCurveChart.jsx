@@ -20,7 +20,19 @@ const SEGMENT_COLORS = [
   "#1abc9c",
 ];
 
-export default function DemandCurveChart({ demandCurve, segmentDemand, segmentDimension }) {
+function formatPriceLabel(price, pricingModel, hybridTiers) {
+  if (pricingModel === "hybrid" && hybridTiers) {
+    const tier = hybridTiers.find((t) => t.total_12m === price);
+    if (tier) return `$${tier.upfront} + $${tier.monthly}/mo`;
+  }
+  if (pricingModel === "subscription") return `$${price}/mo`;
+  return `$${price}`;
+}
+
+export default function DemandCurveChart({
+  demandCurve, segmentDemand, segmentDimension,
+  pricingModel = "one_time", hybridTiers,
+}) {
   if (!demandCurve || !demandCurve.price_points) {
     return <p>No demand data available.</p>;
   }
@@ -28,6 +40,7 @@ export default function DemandCurveChart({ demandCurve, segmentDemand, segmentDi
   // Overall demand chart data
   const overallData = demandCurve.price_points.map((price, i) => ({
     price,
+    label: formatPriceLabel(price, pricingModel, hybridTiers),
     "Would Buy": demandCurve.demand_pct[i],
   }));
 
@@ -56,8 +69,7 @@ export default function DemandCurveChart({ demandCurve, segmentDemand, segmentDi
         <AreaChart data={overallData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
           <XAxis
-            dataKey="price"
-            tickFormatter={(v) => `$${v}`}
+            dataKey="label"
             fontSize={12}
           />
           <YAxis
@@ -67,7 +79,6 @@ export default function DemandCurveChart({ demandCurve, segmentDemand, segmentDi
           />
           <Tooltip
             formatter={(value) => `${value.toFixed(1)}%`}
-            labelFormatter={(label) => `$${label}`}
           />
           <Area
             type="monotone"
@@ -91,7 +102,7 @@ export default function DemandCurveChart({ demandCurve, segmentDemand, segmentDi
         <tbody>
           {demandCurve.price_points.map((price, i) => (
             <tr key={price}>
-              <td>${price}</td>
+              <td>{formatPriceLabel(price, pricingModel, hybridTiers)}</td>
               <td>{demandCurve.demand_pct[i].toFixed(1)}%</td>
             </tr>
           ))}

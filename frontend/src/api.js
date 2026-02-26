@@ -89,9 +89,20 @@ export async function rerunSession(id, { question, sector, num_personas, demogra
   return resp.json();
 }
 
-export async function runWtpAnalysis(id, { price_points, segment_by } = {}) {
+export async function runWtpAnalysis(id, {
+  pricing_model,
+  price_points,
+  upfront_price_points,
+  subscription_price_points,
+  billing_interval,
+  segment_by,
+} = {}) {
   const body = {};
+  if (pricing_model) body.pricing_model = pricing_model;
   if (price_points) body.price_points = price_points;
+  if (upfront_price_points) body.upfront_price_points = upfront_price_points;
+  if (subscription_price_points) body.subscription_price_points = subscription_price_points;
+  if (billing_interval) body.billing_interval = billing_interval;
   if (segment_by) body.segment_by = segment_by;
 
   const resp = await fetch(`${BASE}/${id}/wtp`, {

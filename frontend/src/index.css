@@ -880,3 +880,74 @@ button:disabled {
   color: #868e96;
   margin-top: 0.25rem;
 }
+
+.recommended-price-breakdown {
+  font-size: 0.95rem;
+  color: #495057;
+  margin-top: 0.25rem;
+}
+
+/* --- Pricing Model Selector --- */
+
+.pricing-model-selector {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.pricing-model-btn {
+  padding: 0.45rem 1rem;
+  background: #f8f9fa;
+  color: #495057;
+  border: none;
+  border-right: 1px solid #dee2e6;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.pricing-model-btn:last-child {
+  border-right: none;
+}
+
+.pricing-model-btn:hover {
+  background: #e9ecef;
+}
+
+.pricing-model-btn.active {
+  background: #228be6;
+  color: #fff;
+}
+
+.pricing-model-btn.active:hover {
+  background: #1c7ed6;
+}
+
+/* --- Hybrid Preview --- */
+
+.hybrid-preview {
+  font-size: 0.8rem;
+  color: #868e96;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* --- Hybrid Callout --- */
+
+.hybrid-callout {
+  font-size: 0.85rem;
+  color: #1971c2;
+  background: #e7f5ff;
+  border: 1px solid #a5d8ff;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
