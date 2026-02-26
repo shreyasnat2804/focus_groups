@@ -137,11 +137,20 @@ export default function PricingAnalysis({ sessionId }) {
               .map((s) => parseInt(s.trim(), 10))
               .filter((n) => !isNaN(n) && n > 0);
 
+            const rawOptimal = results.van_westendorp.optimal_price;
+
             if (parsedPoints.length === 0) {
-              return <p className="pricing-analysis-desc">No valid price points entered.</p>;
+              return (
+                <PriceGauge
+                  label="Recommended Price"
+                  optimalPrice={rawOptimal}
+                  minPrice={Math.min(...results.van_westendorp.curves.price_points)}
+                  maxPrice={Math.max(...results.van_westendorp.curves.price_points)}
+                  commentOverride="Add price points to see your range!"
+                />
+              );
             }
 
-            const rawOptimal = results.van_westendorp.optimal_price;
             const snappedOptimal = parsedPoints.reduce((closest, p) =>
               Math.abs(p - rawOptimal) < Math.abs(closest - rawOptimal) ? p : closest,
               parsedPoints[0]

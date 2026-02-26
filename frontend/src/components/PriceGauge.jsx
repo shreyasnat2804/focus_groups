@@ -10,7 +10,7 @@ function getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice) {
   return "Near the top of your range. Strong pricing power detected.";
 }
 
-export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label }) {
+export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, commentOverride }) {
   const fillRatio = Math.min(
     1,
     Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice))
@@ -68,7 +68,7 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label }) 
         <span>${minPrice.toFixed(0)}</span>
         <span>${maxPrice.toFixed(0)}</span>
       </div>
-      <p className="price-gauge-comment">{getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice)}</p>
+      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice)}</p>
     </div>
   );
 }
