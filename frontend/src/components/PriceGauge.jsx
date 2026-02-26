@@ -10,22 +10,38 @@ function getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice) {
   return "Near the top of your range. Strong pricing power detected.";
 }
 
-export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, commentOverride }) {
-  // fillRatio clamps naturally: out-of-range prices pin the arc to 0% or 100%
-  const fillRatio = Math.min(
-    1,
-    Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice))
-  );
+function arcPoint(cx, cy, radius, ratio) {
+  // ratio 0 = left end (180°), ratio 1 = right end (0°)
+  const angle = (180 - ratio * 180) * (Math.PI / 180);
+  return {
+    x: cx + radius * Math.cos(angle),
+    y: cy - radius * Math.sin(angle),
+  };
+}
+
+export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, commentOverride, rawOptimalPrice }) {
+  const cx = 150;
+  const cy = 130;
+  const innerRadius = 80;
+  const outerRadius = 120;
+
+  // Snapped price drives the arc fill and center label
+  const fillRatio = Math.min(1, Math.max(0, (optimalPrice - minPrice) / (maxPrice - minPrice)));
+
+  // Raw price drives the comment logic
+  const priceForComment = rawOptimalPrice ?? optimalPrice;
+  const rawFillRatio = Math.min(1, Math.max(0, (priceForComment - minPrice) / (maxPrice - minPrice)));
 
   const data = [
     { value: fillRatio },
     { value: 1 - fillRatio },
   ];
 
-  const cx = 150;
-  const cy = 130;
-  const innerRadius = 80;
-  const outerRadius = 120;
+  // Marker for the true recommended price (only shown when different from snapped)
+  const showMarker = rawOptimalPrice != null && rawOptimalPrice !== optimalPrice;
+  const markerInner = showMarker ? arcPoint(cx, cy, innerRadius + 2, rawFillRatio) : null;
+  const markerOuter = showMarker ? arcPoint(cx, cy, outerRadius - 2, rawFillRatio) : null;
+  const markerLabel = showMarker ? arcPoint(cx, cy, outerRadius + 14, rawFillRatio) : null;
 
   return (
     <div className="price-gauge-container">
@@ -45,6 +61,31 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
           <Cell fill="#f97316" />
           <Cell fill="#e5e7eb" />
         </Pie>
+
+        {/* True recommended price marker */}
+        {showMarker && (
+          <>
+            <line
+              x1={markerInner.x}
+              y1={markerInner.y}
+              x2={markerOuter.x}
+              y2={markerOuter.y}
+              stroke="#1a1a1a"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+            <text
+              x={markerLabel.x}
+              y={markerLabel.y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{ fontSize: "0.65rem", fill: "#1a1a1a", fontWeight: 600 }}
+            >
+              ${rawOptimalPrice.toFixed(0)}
+            </text>
+          </>
+        )}
+
         {/* Bold price label at center of arc */}
         <text
           x={cx}
@@ -69,7 +110,7 @@ export default function PriceGauge({ optimalPrice, minPrice, maxPrice, label, co
         <span>${minPrice.toFixed(0)}</span>
         <span>${maxPrice.toFixed(0)}</span>
       </div>
-      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(fillRatio, optimalPrice, minPrice, maxPrice)}</p>
+      <p className="price-gauge-comment">{commentOverride ?? getGaugeComment(rawFillRatio, priceForComment, minPrice, maxPrice)}</p>
     </div>
   );
 }
