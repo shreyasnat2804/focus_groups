@@ -61,15 +61,16 @@ const CURVE_LABELS: Record<string, string> = {
   tooExpensive: "Too Expensive",
 };
 
-// Gabor-Granger demand curve data
+// Gabor-Granger demand curve data (centered around $39.99/mo, range ~$28-$56)
 const GG_POINTS = [
   { x: 0, y: 95 },
-  { x: 25, y: 95 },
-  { x: 50, y: 90 },
-  { x: 75, y: 70 },
-  { x: 100, y: 40 },
-  { x: 125, y: 15 },
-  { x: 150, y: 3 },
+  { x: 20, y: 95 },
+  { x: 45, y: 92 },
+  { x: 70, y: 80 },
+  { x: 90, y: 55 },
+  { x: 110, y: 30 },
+  { x: 135, y: 10 },
+  { x: 155, y: 3 },
   { x: 170, y: 0 },
 ];
 
@@ -242,10 +243,10 @@ export const PricingScene: React.FC = () => {
                 transform: `scale(${priceScale})`,
               }}
             >
-              $1/mo
+              $39.99/mo
             </div>
             <div style={{ fontSize: 11, color: "#94a3b8" }}>
-              Acceptable range: $1 – $3
+              Acceptable range: $28 – $52
             </div>
           </div>
 
@@ -286,7 +287,7 @@ export const PricingScene: React.FC = () => {
                 ACCEPTABLE RANGE
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
-                $1 – $3
+                $28 – $52
               </div>
             </div>
           </div>
@@ -472,7 +473,7 @@ export const PricingScene: React.FC = () => {
               })()}
 
               {/* Price axis labels */}
-              {["$450", "$550", "$650", "$750", "$850"].map((label, i) => (
+              {["$28", "$35", "$40", "$48", "$56"].map((label, i) => (
                 <text
                   key={label}
                   x={(i / 4) * CHART_W}
