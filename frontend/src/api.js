@@ -1,5 +1,13 @@
 const BASE = "/api/sessions";
 
+const API_KEY = import.meta.env.VITE_API_KEY || "";
+
+function authHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (API_KEY) headers["X-API-Key"] = API_KEY;
+  return headers;
+}
+
 export async function createSession({ question, sector, num_personas, demographic_filter }) {
   const body = { question, num_personas };
   if (sector) body.sector = sector;
@@ -7,7 +15,7 @@ export async function createSession({ question, sector, num_personas, demographi
 
   const resp = await fetch(BASE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
 
@@ -20,7 +28,7 @@ export async function createSession({ question, sector, num_personas, demographi
 }
 
 export async function getSession(id) {
-  const resp = await fetch(`${BASE}/${id}`);
+  const resp = await fetch(`${BASE}/${id}`, { headers: authHeaders() });
   if (!resp.ok) throw new Error("Session not found");
   return resp.json();
 }
@@ -30,25 +38,25 @@ export async function listSessions({ limit = 10, offset = 0, search, sector, del
   if (search) params.set("search", search);
   if (sector) params.set("sector", sector);
   if (deleted) params.set("deleted", "true");
-  const resp = await fetch(`${BASE}?${params}`);
+  const resp = await fetch(`${BASE}?${params}`, { headers: authHeaders() });
   if (!resp.ok) throw new Error("Failed to fetch sessions");
   return resp.json();
 }
 
 export async function deleteSession(id) {
-  const resp = await fetch(`${BASE}/${id}`, { method: "DELETE" });
+  const resp = await fetch(`${BASE}/${id}`, { method: "DELETE", headers: authHeaders() });
   if (!resp.ok) throw new Error("Failed to delete session");
   return resp.json();
 }
 
 export async function restoreSession(id) {
-  const resp = await fetch(`${BASE}/${id}/restore`, { method: "POST" });
+  const resp = await fetch(`${BASE}/${id}/restore`, { method: "POST", headers: authHeaders() });
   if (!resp.ok) throw new Error("Failed to restore session");
   return resp.json();
 }
 
 export async function permanentlyDeleteSession(id) {
-  const resp = await fetch(`${BASE}/${id}/permanent`, { method: "DELETE" });
+  const resp = await fetch(`${BASE}/${id}/permanent`, { method: "DELETE", headers: authHeaders() });
   if (!resp.ok) throw new Error("Failed to permanently delete session");
   return resp.json();
 }
@@ -56,7 +64,7 @@ export async function permanentlyDeleteSession(id) {
 export async function renameSession(id, name) {
   const resp = await fetch(`${BASE}/${id}/name`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ name }),
   });
 
@@ -77,7 +85,7 @@ export async function rerunSession(id, { question, sector, num_personas, demogra
 
   const resp = await fetch(`${BASE}/${id}/rerun`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
 
@@ -107,7 +115,7 @@ export async function runWtpAnalysis(id, {
 
   const resp = await fetch(`${BASE}/${id}/wtp`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
 

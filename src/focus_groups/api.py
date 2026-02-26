@@ -12,10 +12,12 @@ from typing import Literal, Optional
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, model_validator
+
+from focus_groups.auth import require_api_key
 
 from focus_groups.export import export_csv, export_pdf
 from focus_groups.personas.cards import PersonaCard
@@ -50,7 +52,11 @@ from focus_groups.sessions import (
     permanently_delete_session,
 )
 
-app = FastAPI(title="Focus Groups API", version="0.1.0")
+app = FastAPI(
+    title="Focus Groups API",
+    version="0.1.0",
+    dependencies=[Depends(require_api_key)],
+)
 
 app.add_middleware(
     CORSMiddleware,
