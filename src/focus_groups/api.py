@@ -25,7 +25,7 @@ ALLOWED_ORIGINS = os.getenv(
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -121,16 +121,16 @@ def get_db():
 # ── Request / Response models ─────────────────────────────────────────────────
 
 class SessionRequest(BaseModel):
-    question: str
-    num_personas: int
-    sector: str | None = None
+    question: str = Field(min_length=1, max_length=2000)
+    num_personas: int = Field(ge=1, le=50)
+    sector: Literal["tech", "financial", "political"] | None = None
     demographic_filter: dict | None = None
 
 
 class RerunRequest(BaseModel):
-    question: str
-    sector: str | None = None
-    num_personas: int | None = None
+    question: str = Field(min_length=1, max_length=2000)
+    sector: Literal["tech", "financial", "political"] | None = None
+    num_personas: int | None = Field(default=None, ge=1, le=50)
     demographic_filter: dict | None = None
 
 
@@ -140,7 +140,10 @@ class WtpRequest(BaseModel):
     upfront_price_points: Optional[list[float]] = None
     subscription_price_points: Optional[list[float]] = None
     billing_interval: Optional[Literal["monthly", "annual"]] = "monthly"
-    segment_by: str = "income_bracket"
+    segment_by: Literal[
+        "age_group", "gender", "income_bracket",
+        "education_level", "region"
+    ] = "income_bracket"
 
     @model_validator(mode="after")
     def hybrid_fields_required(self):

@@ -174,8 +174,9 @@ def _build_filter_clause(
         conditions.append("deleted_at IS NULL")
 
     if search:
-        conditions.append("question ILIKE %s")
-        params.append(f"%{search}%")
+        escaped = search.replace("%", r"\%").replace("_", r"\_")
+        conditions.append("question ILIKE %s ESCAPE '\\'")
+        params.append(f"%{escaped}%")
 
     if sector:
         conditions.append("sector = %s")
