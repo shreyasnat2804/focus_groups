@@ -6,6 +6,7 @@ Run with: uvicorn focus_groups.api:app --reload
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from contextlib import asynccontextmanager
@@ -22,7 +23,7 @@ ALLOWED_ORIGINS = os.getenv(
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -63,6 +64,8 @@ from focus_groups.sessions import (
     permanently_delete_session,
 )
 
+logger = logging.getLogger(__name__)
+
 _last_purge: float = 0
 PURGE_INTERVAL = 3600  # seconds — purge expired sessions at most once per hour
 
@@ -92,6 +95,12 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Content-Type", "X-API-Key"],
 )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception")
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 def get_db():
@@ -219,11 +228,10 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
         responses = run_focus_group(client, cards, req.question)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Focus group generation failed")
         fail_session(conn, session_id)
-        raise HTTPException(status_code=500, detail=f"Focus group generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Focus group generation failed. Please try again.")
 
     return SessionCreated(
         session_id=session_id,
@@ -362,11 +370,10 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
         responses = run_focus_group(client, cards, req.question)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Focus group re-run failed")
         fail_session(conn, session_id)
-        raise HTTPException(status_code=500, detail=f"Focus group re-run failed: {e}")
+        raise HTTPException(status_code=500, detail="Focus group re-run failed. Please try again.")
 
     return SessionCreated(
         session_id=session_id,
@@ -465,10 +472,9 @@ def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=De
             seg_curve = compute_demand_curve(seg_data, price_points)
             segment_demand_results[seg_name] = seg_curve
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"WTP analysis failed: {e}")
+    except Exception:
+        logger.exception("WTP analysis failed")
+        raise HTTPException(status_code=500, detail="WTP analysis failed. Please try again.")
 
     # Build response
     result = {

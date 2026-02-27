@@ -1,4 +1,4 @@
-# Fix: Sanitize Error Responses
+# Fix: Sanitize Error Responses — IMPLEMENTED
 
 ## Problem
 Exception details are leaked to clients via `HTTPException(detail=f"...{e}")`. Internal tracebacks are printed to stdout. This exposes implementation details to attackers.
