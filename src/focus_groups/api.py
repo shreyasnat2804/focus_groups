@@ -22,7 +22,7 @@ ALLOWED_ORIGINS = os.getenv(
     "http://localhost:5173,http://localhost:3000",
 ).split(",")
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, model_validator
@@ -88,7 +88,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Focus Groups API",
     version="0.1.0",
-    dependencies=[Depends(require_api_key)],
     lifespan=lifespan,
 )
 app.state.limiter = limiter
@@ -107,6 +106,37 @@ app.add_middleware(
 async def generic_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled exception")
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+# ── Health check endpoints (no auth, no rate limiting) ────────────────────────
+
+@app.get("/health")
+def liveness():
+    """Liveness probe: is the process running?"""
+    return {"status": "ok"}
+
+
+@app.get("/ready")
+def readiness():
+    """Readiness probe: can we serve traffic?
+
+    Grabs a connection from the pool, runs SELECT 1, returns it.
+    Returns 503 if the pool is exhausted or DB is unreachable.
+    """
+    try:
+        conn = get_pool_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        finally:
+            return_pool_conn(conn)
+    except Exception:
+        logger.warning("Readiness check failed", exc_info=True)
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "detail": "Database connection failed"},
+        )
+    return {"status": "ready"}
 
 
 def get_db():
@@ -201,9 +231,12 @@ class SessionCreated(BaseModel):
     num_responses: int
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+# ── Business endpoints (auth required) ────────────────────────────────────────
 
-@app.post("/api/sessions", response_model=SessionCreated)
+api_router = APIRouter(prefix="/api", dependencies=[Depends(require_api_key)])
+
+
+@api_router.post("/sessions", response_model=SessionCreated)
 @limiter.limit("5/minute")
 def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(get_db)):
     """
@@ -249,7 +282,7 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
     )
 
 
-@app.get("/api/sessions/{session_id}")
+@api_router.get("/sessions/{session_id}")
 @limiter.limit("30/minute")
 def get_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Get a session with all its responses."""
@@ -261,7 +294,7 @@ def get_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)
     return session
 
 
-@app.get("/api/sessions")
+@api_router.get("/sessions")
 @limiter.limit("30/minute")
 def list_sessions_endpoint(
     request: Request,
@@ -296,7 +329,7 @@ def list_sessions_endpoint(
     }
 
 
-@app.delete("/api/sessions/{session_id}")
+@api_router.delete("/sessions/{session_id}")
 @limiter.limit("20/minute")
 def delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Soft delete a session (move to trash)."""
@@ -307,7 +340,7 @@ def delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_
     return {"status": "deleted", "session_id": session_id}
 
 
-@app.post("/api/sessions/{session_id}/restore")
+@api_router.post("/sessions/{session_id}/restore")
 @limiter.limit("20/minute")
 def restore_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Restore a soft-deleted session from trash."""
@@ -318,7 +351,7 @@ def restore_session_endpoint(request: Request, session_id: str, conn=Depends(get
     return {"status": "restored", "session_id": session_id}
 
 
-@app.delete("/api/sessions/{session_id}/permanent")
+@api_router.delete("/sessions/{session_id}/permanent")
 @limiter.limit("20/minute")
 def permanently_delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Permanently delete a session (cannot be undone)."""
@@ -329,7 +362,7 @@ def permanently_delete_session_endpoint(request: Request, session_id: str, conn=
     return {"status": "permanently_deleted", "session_id": session_id}
 
 
-@app.patch("/api/sessions/{session_id}/name")
+@api_router.patch("/sessions/{session_id}/name")
 @limiter.limit("20/minute")
 def rename_session_endpoint(request: Request, session_id: str, req: RenameRequest, conn=Depends(get_db)):
     """Update the display name for a session."""
@@ -340,7 +373,7 @@ def rename_session_endpoint(request: Request, session_id: str, req: RenameReques
     return {"session_id": session_id, "name": req.name}
 
 
-@app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)
+@api_router.post("/sessions/{session_id}/rerun", response_model=SessionCreated)
 @limiter.limit("5/minute")
 def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest, conn=Depends(get_db)):
     """
@@ -391,7 +424,7 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
     )
 
 
-@app.post("/api/sessions/{session_id}/wtp")
+@api_router.post("/sessions/{session_id}/wtp")
 @limiter.limit("5/minute")
 def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=Depends(get_db)):
     """
@@ -515,7 +548,7 @@ def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=De
     return result
 
 
-@app.get("/api/sessions/{session_id}/export/csv")
+@api_router.get("/sessions/{session_id}/export/csv")
 @limiter.limit("10/minute")
 def export_csv_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Export a session as CSV."""
@@ -533,7 +566,7 @@ def export_csv_endpoint(request: Request, session_id: str, conn=Depends(get_db))
     )
 
 
-@app.get("/api/sessions/{session_id}/export/pdf")
+@api_router.get("/sessions/{session_id}/export/pdf")
 @limiter.limit("10/minute")
 def export_pdf_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Export a session as PDF."""
@@ -549,3 +582,6 @@ def export_pdf_endpoint(request: Request, session_id: str, conn=Depends(get_db))
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="session_{safe_id}.pdf"'},
     )
+
+
+app.include_router(api_router)
