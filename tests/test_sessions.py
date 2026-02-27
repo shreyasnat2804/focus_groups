@@ -64,7 +64,7 @@ def test_create_session_returns_id():
     sql = cursor.execute.call_args[0][0]
     assert "INSERT INTO focus_group_sessions" in sql
     assert "RETURNING id" in sql
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 def test_create_session_passes_params():
@@ -113,7 +113,7 @@ def test_save_responses_inserts_rows():
     count = save_responses(conn, session_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890", responses=responses)
 
     assert count == 2
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 def test_save_responses_empty_list():
@@ -135,7 +135,7 @@ def test_complete_session_sets_status():
     sql = cursor.execute.call_args[0][0]
     assert "status = 'completed'" in sql
     assert "completed_at" in sql
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 def test_fail_session_sets_status():
@@ -267,7 +267,7 @@ def test_update_session_question():
     assert "question" in sql
     params = cursor.execute.call_args[0][1]
     assert params == ("New question?", sid)
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 def test_update_session_question_updates_fields():
@@ -294,7 +294,7 @@ def test_delete_responses():
     assert "session_id" in sql
     params = cursor.execute.call_args[0][1]
     assert params == (sid,)
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 # ── soft_delete_session ──────────────────────────────────────────────────────
@@ -311,7 +311,7 @@ def test_soft_delete_session():
     assert "NOW()" in sql
     params = cursor.execute.call_args[0][1]
     assert params == (sid,)
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 # ── restore_session ──────────────────────────────────────────────────────────
@@ -328,7 +328,7 @@ def test_restore_session():
     assert "NULL" in sql
     params = cursor.execute.call_args[0][1]
     assert params == (sid,)
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 # ── purge_expired_sessions ───────────────────────────────────────────────────
@@ -358,7 +358,7 @@ def test_permanently_delete_session():
     assert "id = %s" in sql
     params = cursor.execute.call_args[0][1]
     assert params == (sid,)
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 # ── list_sessions with filters ───────────────────────────────────────────────
@@ -466,7 +466,7 @@ def test_update_session_name():
     assert "name" in sql
     params = cursor.execute.call_args[0][1]
     assert params == ("My Cool Product", sid)
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 def test_update_session_name_to_null():
@@ -478,7 +478,7 @@ def test_update_session_name_to_null():
     params = cursor.execute.call_args[0][1]
     assert params[0] is None
     assert params[1] == sid
-    conn.commit.assert_called_once()
+    conn.commit.assert_not_called()
 
 
 # ── get_session includes name ─────────────────────────────────────────────────

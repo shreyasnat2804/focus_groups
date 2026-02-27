@@ -2,6 +2,12 @@
 Session storage for focus group runs.
 
 CRUD operations for focus_group_sessions and focus_group_responses tables.
+
+IMPORTANT: Most functions do NOT commit. The caller (API endpoint) is
+responsible for calling conn.commit() after all operations succeed,
+or conn.rollback() on failure. Exceptions:
+  - fail_session: commits immediately (called from error handlers)
+  - purge_expired_sessions: commits immediately (runs standalone)
 """
 
 from __future__ import annotations
@@ -32,7 +38,6 @@ def create_session(
             (sector, Json(demographic_filter), question, num_personas),
         )
         session_id = str(cur.fetchone()[0])
-    conn.commit()
     return session_id
 
 
@@ -66,7 +71,6 @@ def save_responses(conn, session_id: str, responses: list[dict]) -> int:
                 ),
             )
 
-    conn.commit()
     return len(responses)
 
 
@@ -81,7 +85,6 @@ def complete_session(conn, session_id: str) -> None:
             """,
             (session_id,),
         )
-    conn.commit()
 
 
 def fail_session(conn, session_id: str) -> None:
@@ -250,7 +253,6 @@ def update_session_question(conn, session_id: str, question: str) -> None:
             """,
             (question, session_id),
         )
-    conn.commit()
 
 
 def update_session_name(conn, session_id: str, name: str | None) -> None:
@@ -264,7 +266,6 @@ def update_session_name(conn, session_id: str, name: str | None) -> None:
             """,
             (name, session_id),
         )
-    conn.commit()
 
 
 def delete_responses(conn, session_id: str) -> None:
@@ -277,7 +278,6 @@ def delete_responses(conn, session_id: str) -> None:
             """,
             (session_id,),
         )
-    conn.commit()
 
 
 def soft_delete_session(conn, session_id: str) -> None:
@@ -291,7 +291,6 @@ def soft_delete_session(conn, session_id: str) -> None:
             """,
             (session_id,),
         )
-    conn.commit()
 
 
 def restore_session(conn, session_id: str) -> None:
@@ -305,7 +304,6 @@ def restore_session(conn, session_id: str) -> None:
             """,
             (session_id,),
         )
-    conn.commit()
 
 
 def purge_expired_sessions(conn) -> None:
@@ -330,4 +328,3 @@ def permanently_delete_session(conn, session_id: str) -> None:
             """,
             (session_id,),
         )
-    conn.commit()

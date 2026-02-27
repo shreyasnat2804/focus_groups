@@ -255,7 +255,7 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
     if not cards:
         raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
 
-    # Create session record
+    # Create session record and commit so fail_session can find it
     session_id = create_session(
         conn,
         sector=req.sector,
@@ -263,6 +263,7 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
         num_personas=req.num_personas,
         question=req.question,
     )
+    conn.commit()
 
     # Run focus group through Claude
     try:
@@ -270,7 +271,9 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
         responses = run_focus_group(client, cards, req.question)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
+        conn.commit()
     except Exception:
+        conn.rollback()
         logger.exception("Focus group generation failed")
         fail_session(conn, session_id)
         raise HTTPException(status_code=500, detail="Focus group generation failed. Please try again.")
@@ -337,6 +340,7 @@ def delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     soft_delete_session(conn, session_id)
+    conn.commit()
     return {"status": "deleted", "session_id": session_id}
 
 
@@ -348,6 +352,7 @@ def restore_session_endpoint(request: Request, session_id: str, conn=Depends(get
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     restore_session(conn, session_id)
+    conn.commit()
     return {"status": "restored", "session_id": session_id}
 
 
@@ -359,6 +364,7 @@ def permanently_delete_session_endpoint(request: Request, session_id: str, conn=
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     permanently_delete_session(conn, session_id)
+    conn.commit()
     return {"status": "permanently_deleted", "session_id": session_id}
 
 
@@ -370,6 +376,7 @@ def rename_session_endpoint(request: Request, session_id: str, req: RenameReques
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     update_session_name(conn, session_id, req.name)
+    conn.commit()
     return {"session_id": session_id, "name": req.name}
 
 
@@ -392,11 +399,7 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
     num_personas = req.num_personas if req.num_personas is not None else session["num_personas"]
     demo_filter = req.demographic_filter if req.demographic_filter is not None else (session["demographic_filter"] or {})
 
-    # Update question and clear old responses
-    update_session_question(conn, session_id, req.question)
-    delete_responses(conn, session_id)
-
-    # Re-select personas and run
+    # Re-select personas
     cards = select_personas(
         conn,
         demographic_filter=demo_filter,
@@ -408,11 +411,18 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
         raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
 
     try:
+        # Run Claude FIRST, before modifying any DB state
         client = get_client()
         responses = run_focus_group(client, cards, req.question)
+
+        # All Claude calls succeeded — now update DB atomically
+        update_session_question(conn, session_id, req.question)
+        delete_responses(conn, session_id)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
+        conn.commit()
     except Exception:
+        conn.rollback()
         logger.exception("Focus group re-run failed")
         fail_session(conn, session_id)
         raise HTTPException(status_code=500, detail="Focus group re-run failed. Please try again.")
