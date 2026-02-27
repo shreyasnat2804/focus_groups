@@ -1,4 +1,4 @@
-# Fix: Add Missing Test Coverage
+# Fix: Add Missing Test Coverage ✅ IMPLEMENTED
 
 ## Problem
 Several modules and endpoints have zero test coverage:
@@ -9,6 +9,10 @@ Several modules and endpoints have zero test coverage:
 - Input validation edge cases for existing endpoints
 
 ## Severity: HIGH
+
+## Status: IMPLEMENTED (2026-02-26)
+
+Tests 1–4 implemented (26 new tests, all passing). Item 5 (reduce over-mocking) deferred — current mocking pattern works and matches existing test_api.py conventions.
 
 ## Test Plans
 
