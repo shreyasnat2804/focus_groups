@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import time
 from contextlib import asynccontextmanager
 from io import BytesIO
@@ -65,6 +66,11 @@ from focus_groups.sessions import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_filename(name: str) -> str:
+    """Remove any characters that could cause header injection."""
+    return re.sub(r'[^a-zA-Z0-9_-]', '', name)
 
 _last_purge: float = 0
 PURGE_INTERVAL = 3600  # seconds — purge expired sessions at most once per hour
@@ -516,10 +522,11 @@ def export_csv_endpoint(request: Request, session_id: str, conn=Depends(get_db))
         raise HTTPException(status_code=404, detail="Session not found.")
 
     csv_text = export_csv(session)
+    safe_id = _safe_filename(session_id)
     return StreamingResponse(
         iter([csv_text]),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.csv"},
+        headers={"Content-Disposition": f'attachment; filename="session_{safe_id}.csv"'},
     )
 
 
@@ -533,8 +540,9 @@ def export_pdf_endpoint(request: Request, session_id: str, conn=Depends(get_db))
         raise HTTPException(status_code=404, detail="Session not found.")
 
     pdf_bytes = export_pdf(session)
+    safe_id = _safe_filename(session_id)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.pdf"},
+        headers={"Content-Disposition": f'attachment; filename="session_{safe_id}.pdf"'},
     )
