@@ -1,4 +1,4 @@
-# Fix: Restrict CORS
+# Fix: Restrict CORS — IMPLEMENTED
 
 ## Problem
 `allow_origins=["*"]` combined with `allow_credentials=True` is contradictory (browsers ignore credentials with wildcard origin) and dangerous if credentials are ever added.
