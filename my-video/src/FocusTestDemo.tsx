@@ -16,20 +16,20 @@ const fadeTransition = fade();
 const fadeTiming = linearTiming({ durationInFrames: TRANSITION_DURATION });
 
 const scenes = [
-  { component: TitleScene, duration: 120 },
-  { component: ProblemScene, duration: 150 },
-  { component: SolutionScene, duration: 150 },
-  { component: ArchitectureScene, duration: 180 },
-  { component: LoraScene, duration: 210 },
-  { component: PitchDemoScene, duration: 180 },
-  { component: ResultsDemoScene, duration: 180 },
-  { component: PricingScene, duration: 210 },
-  { component: FeaturesScene, duration: 150 },
-  { component: ClosingScene, duration: 120 },
+  { component: TitleScene, duration: 150 },
+  { component: ProblemScene, duration: 190 },
+  { component: SolutionScene, duration: 200 },
+  { component: ArchitectureScene, duration: 250 },
+  { component: LoraScene, duration: 280 },
+  { component: PitchDemoScene, duration: 240 },
+  { component: ResultsDemoScene, duration: 250 },
+  { component: PricingScene, duration: 280 },
+  { component: FeaturesScene, duration: 210 },
+  { component: ClosingScene, duration: 150 },
 ];
 
 // Total = sum(durations) - (numTransitions * transitionDuration)
-// = 1230 - (7 * 15) = 1230 - 105 = 1125 frames
+// = 2200 - (9 * 15) = 2200 - 135 = 2065 frames
 export const TOTAL_DURATION = scenes.reduce((sum, s) => sum + s.duration, 0) -
   (scenes.length - 1) * TRANSITION_DURATION;
 
