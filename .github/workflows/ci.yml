@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, poc]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: fg_user
+          POSTGRES_PASSWORD: localdev
+          POSTGRES_DB: focusgroups
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U fg_user -d focusgroups"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest
+
+      - name: Init DB schema
+        run: psql -h localhost -U fg_user -d focusgroups -f db/init.sql
+        env:
+          PGPASSWORD: localdev
+
+      - name: Run tests
+        run: python3 -m pytest tests/ -v
+        env:
+          PG_HOST: localhost
+          PG_PASSWORD: localdev
+          PG_DB: focusgroups
+          PG_USER: fg_user
