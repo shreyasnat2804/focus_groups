@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Runtime-only deps (libpq for psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 && \
+    libpq5 curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder
