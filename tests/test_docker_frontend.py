@@ -81,6 +81,34 @@ class TestNginxConf:
         assert "expires" in content
         assert "Cache-Control" in content
 
+    def test_security_headers_in_static_location(self):
+        """Static asset location block must repeat security headers.
+
+        Nginx does NOT inherit server-level add_header into location blocks
+        that define their own add_header directives.
+        """
+        content = (FRONTEND / "nginx.conf").read_text()
+        # Find the static assets location block
+        in_static_block = False
+        brace_depth = 0
+        static_block_lines = []
+        for line in content.splitlines():
+            if "location ~*" in line and "(js|css|" in line:
+                in_static_block = True
+            if in_static_block:
+                brace_depth += line.count("{") - line.count("}")
+                static_block_lines.append(line)
+                if brace_depth == 0 and static_block_lines:
+                    break
+        static_block = "\n".join(static_block_lines)
+        assert "X-Content-Type-Options" in static_block, (
+            "Static asset location must include X-Content-Type-Options "
+            "(nginx does not inherit server-level add_header)"
+        )
+        assert "X-Frame-Options" in static_block, (
+            "Static asset location must include X-Frame-Options"
+        )
+
 
 class TestDockerignore:
     """Validate frontend/.dockerignore exists and excludes expected paths."""
@@ -122,13 +150,9 @@ class TestApiModule:
     def test_base_uses_api_url_prefix(self):
         """BASE should incorporate VITE_API_URL for production builds."""
         content = (FRONTEND / "src" / "api.js").read_text()
-        # The API_BASE or BASE should reference VITE_API_URL
         assert "VITE_API_URL" in content
-        # Ensure old hardcoded-only pattern is gone
         lines = content.split("\n")
         base_lines = [l for l in lines if l.startswith("const BASE")]
         assert len(base_lines) > 0
-        # BASE should use API_BASE (which includes VITE_API_URL)
         for line in base_lines:
-            # Either BASE itself uses VITE_API_URL or it references API_BASE
             assert "VITE_API_URL" in line or "API_BASE" in line
