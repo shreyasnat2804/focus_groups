@@ -1,0 +1,11 @@
+.venv/
+.git/
+.claude/
+__pycache__/
+*.pyc
+.env
+tests/
+plans/
+frontend/
+node_modules/
+*.egg-info/
