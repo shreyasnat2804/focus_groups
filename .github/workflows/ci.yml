@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  PROJECT_ID: focusgroups-prod
+  REGION: us-central1
+  API_IMAGE: us-central1-docker.pkg.dev/focusgroups-prod/focusgroups/api
+  WEB_IMAGE: us-central1-docker.pkg.dev/focusgroups-prod/focusgroups/web
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -48,3 +54,77 @@ jobs:
           PG_PASSWORD: localdev
           PG_DB: focusgroups
           PG_USER: fg_user
+
+  deploy-api:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and push API image
+        run: |
+          docker build -t $API_IMAGE:${{ github.sha }} -t $API_IMAGE:latest .
+          docker push $API_IMAGE --all-tags
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy focusgroups-api \
+            --image=$API_IMAGE:${{ github.sha }} \
+            --region=$REGION \
+            --quiet
+
+  deploy-web:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Get API URL
+        id: api-url
+        run: |
+          URL=$(gcloud run services describe focusgroups-api --region=$REGION --format='value(status.url)')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Build and push Web image
+        run: |
+          cd frontend
+          docker build -t $WEB_IMAGE:${{ github.sha }} -t $WEB_IMAGE:latest \
+            --build-arg VITE_API_URL=${{ steps.api-url.outputs.url }} .
+          docker push $WEB_IMAGE --all-tags
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy focusgroups-web \
+            --image=$WEB_IMAGE:${{ github.sha }} \
+            --region=$REGION \
+            --quiet
