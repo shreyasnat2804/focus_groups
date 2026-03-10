@@ -32,3 +32,6 @@ focus-group = "focus_groups.cli_runner:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+focus_groups = ["prompts/*.txt", "wtp/prompts/*.txt"]
