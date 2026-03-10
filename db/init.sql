@@ -126,7 +126,9 @@ CREATE TABLE IF NOT EXISTS focus_group_sessions (
     status             VARCHAR(20)  NOT NULL DEFAULT 'pending'
                        CHECK (status IN ('pending', 'running', 'completed', 'failed')),
     created_at         TIMESTAMPTZ  DEFAULT NOW(),
-    completed_at       TIMESTAMPTZ
+    completed_at       TIMESTAMPTZ,
+    deleted_at         TIMESTAMPTZ,
+    name               VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS focus_group_responses (

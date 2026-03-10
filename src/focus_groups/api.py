@@ -6,7 +6,9 @@ Run with: uvicorn focus_groups.api:app --reload
 
 from __future__ import annotations
 
+import logging
 import os
+import re
 import time
 from contextlib import asynccontextmanager
 from io import BytesIO
@@ -20,10 +22,10 @@ ALLOWED_ORIGINS = os.getenv(
     "http://localhost:5173,http://localhost:3000",
 ).split(",")
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, model_validator
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -63,6 +65,13 @@ from focus_groups.sessions import (
     permanently_delete_session,
 )
 
+logger = logging.getLogger(__name__)
+
+
+def _safe_filename(name: str) -> str:
+    """Remove any characters that could cause header injection."""
+    return re.sub(r'[^a-zA-Z0-9_-]', '', name)
+
 _last_purge: float = 0
 PURGE_INTERVAL = 3600  # seconds — purge expired sessions at most once per hour
 
@@ -79,7 +88,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Focus Groups API",
     version="0.1.0",
-    dependencies=[Depends(require_api_key)],
     lifespan=lifespan,
 )
 app.state.limiter = limiter
@@ -94,6 +102,43 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception")
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+# ── Health check endpoints (no auth, no rate limiting) ────────────────────────
+
+@app.get("/health")
+def liveness():
+    """Liveness probe: is the process running?"""
+    return {"status": "ok"}
+
+
+@app.get("/ready")
+def readiness():
+    """Readiness probe: can we serve traffic?
+
+    Grabs a connection from the pool, runs SELECT 1, returns it.
+    Returns 503 if the pool is exhausted or DB is unreachable.
+    """
+    try:
+        conn = get_pool_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        finally:
+            return_pool_conn(conn)
+    except Exception:
+        logger.warning("Readiness check failed", exc_info=True)
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "detail": "Database connection failed"},
+        )
+    return {"status": "ready"}
+
+
 def get_db():
     """FastAPI dependency: yield a pooled connection, always returned."""
     conn = get_pool_conn()
@@ -106,16 +151,16 @@ def get_db():
 # ── Request / Response models ─────────────────────────────────────────────────
 
 class SessionRequest(BaseModel):
-    question: str
-    num_personas: int
-    sector: str | None = None
+    question: str = Field(min_length=1, max_length=2000)
+    num_personas: int = Field(ge=1, le=50)
+    sector: Literal["tech", "financial", "political"] | None = None
     demographic_filter: dict | None = None
 
 
 class RerunRequest(BaseModel):
-    question: str
-    sector: str | None = None
-    num_personas: int | None = None
+    question: str = Field(min_length=1, max_length=2000)
+    sector: Literal["tech", "financial", "political"] | None = None
+    num_personas: int | None = Field(default=None, ge=1, le=50)
     demographic_filter: dict | None = None
 
 
@@ -125,7 +170,10 @@ class WtpRequest(BaseModel):
     upfront_price_points: Optional[list[float]] = None
     subscription_price_points: Optional[list[float]] = None
     billing_interval: Optional[Literal["monthly", "annual"]] = "monthly"
-    segment_by: str = "income_bracket"
+    segment_by: Literal[
+        "age_group", "gender", "income_bracket",
+        "education_level", "region"
+    ] = "income_bracket"
 
     @model_validator(mode="after")
     def hybrid_fields_required(self):
@@ -183,9 +231,12 @@ class SessionCreated(BaseModel):
     num_responses: int
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+# ── Business endpoints (auth required) ────────────────────────────────────────
 
-@app.post("/api/sessions", response_model=SessionCreated)
+api_router = APIRouter(prefix="/api", dependencies=[Depends(require_api_key)])
+
+
+@api_router.post("/sessions", response_model=SessionCreated)
 @limiter.limit("5/minute")
 def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(get_db)):
     """
@@ -204,7 +255,7 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
     if not cards:
         raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
 
-    # Create session record
+    # Create session record and commit so fail_session can find it
     session_id = create_session(
         conn,
         sector=req.sector,
@@ -212,6 +263,7 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
         num_personas=req.num_personas,
         question=req.question,
     )
+    conn.commit()
 
     # Run focus group through Claude
     try:
@@ -219,11 +271,12 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
         responses = run_focus_group(client, cards, req.question)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        logger.exception("Focus group generation failed")
         fail_session(conn, session_id)
-        raise HTTPException(status_code=500, detail=f"Focus group generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Focus group generation failed. Please try again.")
 
     return SessionCreated(
         session_id=session_id,
@@ -232,7 +285,7 @@ def create_session_endpoint(request: Request, req: SessionRequest, conn=Depends(
     )
 
 
-@app.get("/api/sessions/{session_id}")
+@api_router.get("/sessions/{session_id}")
 @limiter.limit("30/minute")
 def get_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Get a session with all its responses."""
@@ -244,7 +297,7 @@ def get_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)
     return session
 
 
-@app.get("/api/sessions")
+@api_router.get("/sessions")
 @limiter.limit("30/minute")
 def list_sessions_endpoint(
     request: Request,
@@ -279,7 +332,7 @@ def list_sessions_endpoint(
     }
 
 
-@app.delete("/api/sessions/{session_id}")
+@api_router.delete("/sessions/{session_id}")
 @limiter.limit("20/minute")
 def delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Soft delete a session (move to trash)."""
@@ -287,10 +340,11 @@ def delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     soft_delete_session(conn, session_id)
+    conn.commit()
     return {"status": "deleted", "session_id": session_id}
 
 
-@app.post("/api/sessions/{session_id}/restore")
+@api_router.post("/sessions/{session_id}/restore")
 @limiter.limit("20/minute")
 def restore_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Restore a soft-deleted session from trash."""
@@ -298,10 +352,11 @@ def restore_session_endpoint(request: Request, session_id: str, conn=Depends(get
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     restore_session(conn, session_id)
+    conn.commit()
     return {"status": "restored", "session_id": session_id}
 
 
-@app.delete("/api/sessions/{session_id}/permanent")
+@api_router.delete("/sessions/{session_id}/permanent")
 @limiter.limit("20/minute")
 def permanently_delete_session_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Permanently delete a session (cannot be undone)."""
@@ -309,10 +364,11 @@ def permanently_delete_session_endpoint(request: Request, session_id: str, conn=
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     permanently_delete_session(conn, session_id)
+    conn.commit()
     return {"status": "permanently_deleted", "session_id": session_id}
 
 
-@app.patch("/api/sessions/{session_id}/name")
+@api_router.patch("/sessions/{session_id}/name")
 @limiter.limit("20/minute")
 def rename_session_endpoint(request: Request, session_id: str, req: RenameRequest, conn=Depends(get_db)):
     """Update the display name for a session."""
@@ -320,10 +376,11 @@ def rename_session_endpoint(request: Request, session_id: str, req: RenameReques
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found.")
     update_session_name(conn, session_id, req.name)
+    conn.commit()
     return {"session_id": session_id, "name": req.name}
 
 
-@app.post("/api/sessions/{session_id}/rerun", response_model=SessionCreated)
+@api_router.post("/sessions/{session_id}/rerun", response_model=SessionCreated)
 @limiter.limit("5/minute")
 def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest, conn=Depends(get_db)):
     """
@@ -342,11 +399,7 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
     num_personas = req.num_personas if req.num_personas is not None else session["num_personas"]
     demo_filter = req.demographic_filter if req.demographic_filter is not None else (session["demographic_filter"] or {})
 
-    # Update question and clear old responses
-    update_session_question(conn, session_id, req.question)
-    delete_responses(conn, session_id)
-
-    # Re-select personas and run
+    # Re-select personas
     cards = select_personas(
         conn,
         demographic_filter=demo_filter,
@@ -358,15 +411,21 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
         raise HTTPException(status_code=404, detail="No personas found matching the given filters.")
 
     try:
+        # Run Claude FIRST, before modifying any DB state
         client = get_client()
         responses = run_focus_group(client, cards, req.question)
+
+        # All Claude calls succeeded — now update DB atomically
+        update_session_question(conn, session_id, req.question)
+        delete_responses(conn, session_id)
         save_responses(conn, session_id, responses)
         complete_session(conn, session_id)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        logger.exception("Focus group re-run failed")
         fail_session(conn, session_id)
-        raise HTTPException(status_code=500, detail=f"Focus group re-run failed: {e}")
+        raise HTTPException(status_code=500, detail="Focus group re-run failed. Please try again.")
 
     return SessionCreated(
         session_id=session_id,
@@ -375,7 +434,7 @@ def rerun_session_endpoint(request: Request, session_id: str, req: RerunRequest,
     )
 
 
-@app.post("/api/sessions/{session_id}/wtp")
+@api_router.post("/sessions/{session_id}/wtp")
 @limiter.limit("5/minute")
 def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=Depends(get_db)):
     """
@@ -465,10 +524,9 @@ def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=De
             seg_curve = compute_demand_curve(seg_data, price_points)
             segment_demand_results[seg_name] = seg_curve
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"WTP analysis failed: {e}")
+    except Exception:
+        logger.exception("WTP analysis failed")
+        raise HTTPException(status_code=500, detail="WTP analysis failed. Please try again.")
 
     # Build response
     result = {
@@ -500,7 +558,7 @@ def run_wtp_endpoint(request: Request, session_id: str, req: WtpRequest, conn=De
     return result
 
 
-@app.get("/api/sessions/{session_id}/export/csv")
+@api_router.get("/sessions/{session_id}/export/csv")
 @limiter.limit("10/minute")
 def export_csv_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Export a session as CSV."""
@@ -510,14 +568,15 @@ def export_csv_endpoint(request: Request, session_id: str, conn=Depends(get_db))
         raise HTTPException(status_code=404, detail="Session not found.")
 
     csv_text = export_csv(session)
+    safe_id = _safe_filename(session_id)
     return StreamingResponse(
         iter([csv_text]),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.csv"},
+        headers={"Content-Disposition": f'attachment; filename="session_{safe_id}.csv"'},
     )
 
 
-@app.get("/api/sessions/{session_id}/export/pdf")
+@api_router.get("/sessions/{session_id}/export/pdf")
 @limiter.limit("10/minute")
 def export_pdf_endpoint(request: Request, session_id: str, conn=Depends(get_db)):
     """Export a session as PDF."""
@@ -527,8 +586,12 @@ def export_pdf_endpoint(request: Request, session_id: str, conn=Depends(get_db))
         raise HTTPException(status_code=404, detail="Session not found.")
 
     pdf_bytes = export_pdf(session)
+    safe_id = _safe_filename(session_id)
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.pdf"},
+        headers={"Content-Disposition": f'attachment; filename="session_{safe_id}.pdf"'},
     )
+
+
+app.include_router(api_router)

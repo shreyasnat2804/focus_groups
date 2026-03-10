@@ -12,6 +12,16 @@ import io
 from fpdf import FPDF
 
 
+_FORMULA_CHARS = frozenset("=+-@\t\r")
+
+
+def _sanitize_csv_value(val: str) -> str:
+    """Prefix formula-triggering characters to prevent CSV injection."""
+    if val and val[0] in _FORMULA_CHARS:
+        return f"'{val}"
+    return val
+
+
 def export_csv(session: dict) -> str:
     """
     Export a session as CSV text.
@@ -35,8 +45,8 @@ def export_csv(session: dict) -> str:
         writer.writerow([
             r["id"],
             r["post_id"],
-            r["persona_summary"],
-            r["response_text"],
+            _sanitize_csv_value(r["persona_summary"]),
+            _sanitize_csv_value(r["response_text"]),
             r["model"],
         ])
 

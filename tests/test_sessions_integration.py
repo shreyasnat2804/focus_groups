@@ -69,10 +69,11 @@ def _insert_test_post(conn) -> int:
 def test_create_session_roundtrip(conn):
     """create → get, verify dict shape."""
     sid = create_session(conn, "tech", {"age_group": "25-34"}, 3, "Test question?")
+    conn.commit()
     session = get_session(conn, sid)
 
     assert session is not None
-    assert session["id"] == sid
+    assert str(session["id"]) == sid
     assert session["sector"] == "tech"
     assert session["question"] == "Test question?"
     assert session["num_personas"] == 3
@@ -83,7 +84,9 @@ def test_create_session_roundtrip(conn):
 
 def test_complete_session_updates_status(conn):
     sid = create_session(conn, None, {}, 5, "Complete test?")
+    conn.commit()
     complete_session(conn, sid)
+    conn.commit()
 
     session = get_session(conn, sid)
     assert session["status"] == "completed"
@@ -92,6 +95,7 @@ def test_complete_session_updates_status(conn):
 
 def test_fail_session_updates_status(conn):
     sid = create_session(conn, None, {}, 5, "Fail test?")
+    conn.commit()
     fail_session(conn, sid)
 
     session = get_session(conn, sid)
@@ -103,6 +107,7 @@ def test_save_and_retrieve_responses(conn):
     """Insert a test post (FK), create session, save responses, verify."""
     post_id = _insert_test_post(conn)
     sid = create_session(conn, "tech", {}, 1, "Response test?")
+    conn.commit()
 
     responses = [
         {
@@ -114,6 +119,7 @@ def test_save_and_retrieve_responses(conn):
         },
     ]
     n = save_responses(conn, sid, responses)
+    conn.commit()
     assert n == 1
 
     session = get_session(conn, sid)
@@ -124,9 +130,10 @@ def test_save_and_retrieve_responses(conn):
 
 def test_list_sessions_includes_new(conn):
     sid = create_session(conn, "tech", {}, 2, f"List test {uuid.uuid4().hex[:6]}?")
+    conn.commit()
     sessions = list_sessions(conn, limit=100)
 
-    session_ids = [s["id"] for s in sessions]
+    session_ids = [str(s["id"]) for s in sessions]
     assert sid in session_ids
 
 
@@ -134,6 +141,7 @@ def test_list_sessions_respects_limit(conn):
     # Create a few sessions to ensure there's data
     for i in range(3):
         create_session(conn, None, {}, 1, f"Limit test {uuid.uuid4().hex[:6]}?")
+    conn.commit()
 
     sessions = list_sessions(conn, limit=2)
     assert len(sessions) <= 2

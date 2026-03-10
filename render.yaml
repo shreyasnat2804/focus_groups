@@ -1,0 +1,42 @@
+databases:
+  - name: fg-db
+    plan: free
+    databaseName: focusgroups
+    user: fg_user
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: fg-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fg-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "https://fg-web.onrender.com"
+      - key: PORT
+        value: "8080"
+
+  - type: web
+    name: fg-web
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: fg-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: PORT
+        value: "8080"

@@ -122,10 +122,13 @@ def fetch_json(url: str, session: requests.Session, attempt: int = 0) -> dict | 
         return None
 
     if resp.status_code == 429:
+        if attempt >= 5:
+            print("  [429] max retries exceeded")
+            return None
         wait = int(resp.headers.get("Retry-After", 60))
         print(f"  [429] rate limited — waiting {wait}s")
         time.sleep(wait)
-        return fetch_json(url, session, attempt)
+        return fetch_json(url, session, attempt + 1)
 
     if resp.status_code in (403, 404):
         print(f"  [{resp.status_code}] skipping — subreddit unavailable")

@@ -19,6 +19,7 @@ dependencies = [
     "uvicorn>=0.30",
     "fpdf2>=2.7",
     "slowapi>=0.1.9",
+    "matplotlib>=3.8",
 ]
 
 [project.scripts]

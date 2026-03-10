@@ -4,6 +4,7 @@ import { getSession, createSession, rerunSession, renameSession } from "../api";
 import ResponseCard from "../components/ResponseCard";
 import ExportButtons from "../components/ExportButtons";
 import PricingAnalysis from "../components/PricingAnalysis";
+import ErrorBoundary from "../components/ErrorBoundary";
 import {
   parseProductName,
   parseProductDescription,
@@ -316,14 +317,34 @@ export default function PitchResults() {
       <ExportButtons sessionId={session.id} />
 
       {session.status === "completed" && responses.length > 0 && (
-        <PricingAnalysis sessionId={session.id} />
+        <ErrorBoundary
+          fallback={({ reset }) => (
+            <div className="chart-error">
+              <p>Failed to render pricing analysis.</p>
+              <button onClick={reset}>Retry</button>
+            </div>
+          )}
+        >
+          <PricingAnalysis sessionId={session.id} />
+        </ErrorBoundary>
       )}
 
       <h2>Panel Responses ({responses.length})</h2>
       {responses.length === 0 ? (
         <p>No responses yet.</p>
       ) : (
-        responses.map((r) => <ResponseCard key={r.id} response={r} />)
+        responses.map((r) => (
+          <ErrorBoundary
+            key={r.id}
+            fallback={() => (
+              <div className="card response-card error">
+                <p>Failed to render this response.</p>
+              </div>
+            )}
+          >
+            <ResponseCard response={r} />
+          </ErrorBoundary>
+        ))
       )}
     </div>
   );

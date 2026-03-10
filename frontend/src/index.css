@@ -951,3 +951,42 @@ button:disabled {
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
 }
+
+/* --- Error Boundary --- */
+
+.error-boundary {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.error-boundary h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.error-boundary button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.chart-error {
+  padding: 2rem;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
