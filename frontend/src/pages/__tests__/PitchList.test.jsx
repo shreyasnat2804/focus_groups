@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { MemoryRouter, Routes, Route, Link } from "react-router-dom";
 
 vi.mock("../../api", () => ({
   listSessions: vi.fn(),
@@ -16,6 +16,21 @@ function renderWithRouter() {
   return render(
     <MemoryRouter>
       <PitchList />
+    </MemoryRouter>
+  );
+}
+
+function renderWithNav() {
+  return render(
+    <MemoryRouter initialEntries={["/"]}>
+      <nav>
+        <Link to="/">Pitches</Link>
+        <Link to="/other">Other</Link>
+      </nav>
+      <Routes>
+        <Route path="/" element={<PitchList />} />
+        <Route path="/other" element={<div>Other Page</div>} />
+      </Routes>
     </MemoryRouter>
   );
 }
@@ -127,6 +142,33 @@ describe("PitchList", () => {
     renderWithRouter();
     await waitFor(() => {
       expect(screen.getByText("50% positive")).toBeInTheDocument();
+    });
+  });
+
+  it("resets deleted view when navigating via nav link while on same route", async () => {
+    // Bug: clicking logo/Pitches nav link while viewing deleted sessions
+    // doesn't reset showDeleted because the component stays mounted on "/"
+    listSessions.mockResolvedValue({
+      items: [],
+      total: 0,
+    });
+
+    renderWithNav();
+    await waitFor(() => {
+      expect(screen.getByText(/No pitches yet/)).toBeInTheDocument();
+    });
+
+    // Toggle to deleted view
+    const deletedToggle = screen.getByRole("button", { name: "Recently Deleted" });
+    fireEvent.click(deletedToggle);
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Recently Deleted" })).toBeInTheDocument();
+    });
+
+    // Click the "Pitches" nav link while already on "/" — component stays mounted
+    fireEvent.click(screen.getByRole("link", { name: "Pitches" }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Your Pitches" })).toBeInTheDocument();
     });
   });
 
