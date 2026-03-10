@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { listSessions, deleteSession, restoreSession, permanentlyDeleteSession } from "../api";
 import { parseSentiment, parseProductName, sentimentColor, aggregateSentiments } from "../utils/sentiment";
 
@@ -15,6 +15,13 @@ export default function PitchList() {
   const [search, setSearch] = useState("");
   const [sector, setSector] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
+  const location = useLocation();
+
+  // Reset deleted view when navigating to this route (e.g. clicking nav logo/link)
+  useEffect(() => {
+    setShowDeleted(false);
+    setOffset(0);
+  }, [location.key]);
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
