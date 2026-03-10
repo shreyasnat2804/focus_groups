@@ -31,8 +31,8 @@ services:
     plan: free
     region: oregon
     rootDir: frontend
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: VITE_API_URL
