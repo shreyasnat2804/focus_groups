@@ -47,9 +47,27 @@ _pool: ThreadedConnectionPool | None = None
 
 
 def init_pool(minconn: int = 2, maxconn: int = 10) -> None:
-    """Initialize the connection pool. Call once at app startup."""
+    """Initialize the connection pool. Call once at app startup.
+
+    Retries up to 5 times with exponential backoff so the app can survive
+    a slow-starting database (e.g. Render free-tier cold start).
+    """
+    import time
+
     global _pool
-    _pool = ThreadedConnectionPool(minconn, maxconn, **_pg_kwargs())
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            _pool = ThreadedConnectionPool(minconn, maxconn, **_pg_kwargs())
+            logger.info("Connection pool initialized (attempt %d)", attempt + 1)
+            return
+        except psycopg2.OperationalError:
+            if attempt == max_retries - 1:
+                logger.error("Failed to connect to database after %d attempts", max_retries)
+                raise
+            wait = 2 ** attempt
+            logger.warning("DB connection failed (attempt %d/%d), retrying in %ds...", attempt + 1, max_retries, wait)
+            time.sleep(wait)
 
 
 def get_pool_conn():
