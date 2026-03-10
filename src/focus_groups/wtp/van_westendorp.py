@@ -198,6 +198,6 @@ def find_price_points(curves: dict) -> dict:
     pme = _find_crossing(c, te)
 
     return {
-        "optimal_price": round(optimal, 2),
+        "optimal_price": round(pme, 2),
         "acceptable_range": [round(pmc, 2), round(pme, 2)],
     }
