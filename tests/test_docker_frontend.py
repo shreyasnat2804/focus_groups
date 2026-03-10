@@ -52,9 +52,9 @@ class TestNginxConf:
     def test_exists(self):
         assert (FRONTEND / "nginx.conf").is_file()
 
-    def test_listen_8080(self):
+    def test_listen_port_variable(self):
         content = (FRONTEND / "nginx.conf").read_text()
-        assert "listen 8080" in content
+        assert "listen ${PORT}" in content
 
     def test_try_files_spa_fallback(self):
         content = (FRONTEND / "nginx.conf").read_text()

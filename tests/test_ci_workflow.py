@@ -101,8 +101,9 @@ class TestCIWorkflowStructure:
         assert len(test_steps) == 1, "Missing Run tests step"
         assert "pytest" in test_steps[0]["run"]
 
-    def test_no_deploy_jobs(self, workflow):
-        """Workflow should NOT include deploy jobs yet."""
+    def test_deploy_jobs_gated_on_main(self, workflow):
+        """Deploy jobs should only run on pushes to main."""
         jobs = workflow["jobs"]
-        assert "deploy-api" not in jobs, "deploy-api job should not be present yet"
-        assert "deploy-web" not in jobs, "deploy-web job should not be present yet"
+        for name in ("deploy-api", "deploy-web"):
+            assert name in jobs, f"{name} job missing"
+            assert "main" in jobs[name].get("if", ""), f"{name} should be gated to main"
