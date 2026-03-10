@@ -16,7 +16,14 @@ from pgvector.psycopg2 import register_vector
 
 
 def _pg_kwargs() -> dict:
-    """Return common Postgres connection keyword arguments."""
+    """Return common Postgres connection keyword arguments.
+
+    Checks DATABASE_URL first (used by Render and other PaaS providers).
+    Falls back to individual PG_* env vars for local development.
+    """
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        return {"dsn": database_url}
     return {
         "host": os.getenv("PG_HOST", "localhost"),
         "port": os.getenv("PG_PORT", "5432"),
