@@ -990,3 +990,52 @@ button:disabled {
   border-radius: 8px;
   border: 1px dashed #ddd;
 }
+
+/* --- About Page --- */
+
+.about-lead {
+  font-size: 1.05rem;
+  color: #495057;
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+}
+
+.about-section {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.about-section h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.about-section p {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.about-steps {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.about-list {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.about-cta {
+  text-align: center;
+}
