@@ -59,8 +59,7 @@ def cmd(label: str, binary: str, version_flag: str, verbose: bool, fix_cmd: str)
 
 def db_reachable(verbose: bool) -> bool:
     try:
-        sys.path.insert(0, ".")
-        from src.db import get_conn
+        from focus_groups.db import get_conn
         conn = get_conn()
         with conn.cursor() as cur:
             cur.execute("SELECT version()")

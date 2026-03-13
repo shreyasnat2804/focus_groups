@@ -1,0 +1,11 @@
+Consider the following product (upfront fee + monthly subscription):
+
+{product_description}
+
+As this person, for each of the following pricing tiers, decide whether you would purchase this product at that combination. Each tier shows the setup fee, monthly cost, and total first-year cost.
+
+Pricing tiers:
+{price_points_str}
+
+Respond with ONLY a JSON object mapping each tier's annual total to true (would buy) or false (would not buy), no other text:
+{{{price_json_template}}}

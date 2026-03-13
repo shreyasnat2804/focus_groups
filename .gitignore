@@ -16,3 +16,4 @@ sector_models/
 *.gguf
 *.bin
 *.safetensors
+*WALKTHROUGH*

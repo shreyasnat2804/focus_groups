@@ -1,0 +1,2 @@
+Here is an example of how this person communicates:
+"{text_excerpt}"

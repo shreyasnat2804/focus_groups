@@ -47,12 +47,15 @@ Reddit (PRAW) → Postgres (raw posts)
 
 ## Git Workflow
 
-- Commit AND push after every meaningful change on `main`
+- Commit regularly and logically — each commit should represent one coherent codebase change (e.g. "add tests for X", "implement X module", "update imports for X"). Don't batch unrelated changes into one commit, and don't wait until the end of a prompt to commit everything at once.
+- Push to remote at the end of every prompt, after all commits are made
 - Use `git revert` if something breaks — no force-push or history rewriting
 - Feature branches for model experiments later
 
 ## Testing
-
+- Before every coding task, describe and implement robust testers for what you expect the code to do, and only after that, can you write the code itself.
 - Tests in `tests/` directory, named `test_<module>.py`
 - Run with `python3 -m pytest tests/`
 
+# Instructions
+- If you are blocked from performing an action, check if it is allowed in settings.json and take action according to that before considering asking the user.

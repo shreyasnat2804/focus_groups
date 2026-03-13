@@ -16,12 +16,9 @@ Usage:
 
 import argparse
 import csv
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.db import get_conn
+from focus_groups.db import get_conn
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 OUTPUT_FILE = DATA_DIR / "posts_tagged.csv"
@@ -37,18 +34,20 @@ QUERY = """
 SELECT
     p.source_id,
     p.subreddit,
-    p.metadata->>'sector'   AS sector,
+    p.metadata->>'sector'    AS sector,
     p.author,
     p.score,
     p.created_utc,
     p.text,
-    dt.dimension,
-    dt.value,
+    dd.name                  AS dimension,
+    dv.value,
     dt.confidence,
     dt.method
 FROM posts p
-JOIN demographic_tags dt ON dt.post_id = p.id
-ORDER BY p.id, dt.dimension, dt.method
+JOIN demographic_tags       dt ON dt.post_id              = p.id
+JOIN demographic_values     dv ON dv.id                   = dt.demographic_value_id
+JOIN demographic_dimensions dd ON dd.id                   = dv.dimension_id
+ORDER BY p.id, dd.name, dt.method
 """
 
 COLUMNS = [

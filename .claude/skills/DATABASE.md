@@ -11,66 +11,88 @@ Password: set in `.env` as `POSTGRES_PASSWORD`, defaults to `localdev`.
 
 ## Schema
 
-The init script lives at `db/init.sql`. Core tables:
+The init script lives at `db/init.sql`. Migrations in `db/migrations/`.
+
+### Lookup tables (small, seeded once)
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS vector;
+demographic_dimensions  (id SMALLSERIAL, name VARCHAR(50) UNIQUE)
+    -- age_group | gender | parent_status | income_bracket
 
+demographic_values      (id SMALLSERIAL, dimension_id FK, value VARCHAR(100), UNIQUE(dimension_id,value))
+    -- e.g. (age_group, 25-34) | (gender, female) | (income_bracket, middle_income)
+
+sectors                 (id SMALLSERIAL, name VARCHAR(50) UNIQUE)
+    -- tech | financial | political
+
+embedding_models        (id SMALLSERIAL, name VARCHAR(100) UNIQUE, dimensions SMALLINT)
+    -- all-MiniLM-L6-v2 / 384
+```
+
+### Core tables
+
+```sql
 -- Raw scraped posts
 CREATE TABLE posts (
-    id BIGSERIAL PRIMARY KEY,
-    source VARCHAR(20) NOT NULL DEFAULT 'reddit',  -- reddit, twitter, etc.
-    source_id VARCHAR(100) UNIQUE NOT NULL,         -- reddit post/comment id
-    subreddit VARCHAR(100),
-    author VARCHAR(100),
-    text TEXT NOT NULL,
-    score INT,
-    created_utc TIMESTAMPTZ NOT NULL,
-    scraped_at TIMESTAMPTZ DEFAULT NOW(),
-    metadata JSONB DEFAULT '{}'                     -- flair, parent_id, etc.
+    id           BIGSERIAL PRIMARY KEY,
+    source       VARCHAR(20)  NOT NULL DEFAULT 'reddit',
+    source_id    VARCHAR(100) UNIQUE NOT NULL,
+    subreddit    VARCHAR(100),
+    author       VARCHAR(100),
+    title        TEXT,
+    text         TEXT NOT NULL,
+    score        INT,
+    num_comments INT,
+    created_utc  TIMESTAMPTZ NOT NULL,
+    scraped_at   TIMESTAMPTZ DEFAULT NOW(),
+    metadata     JSONB DEFAULT '{}'        -- sector, permalink, etc.
 );
 
--- Demographic tags (one post can have multiple inferred tags)
+-- Demographic tags — FK to demographic_values instead of raw strings
 CREATE TABLE demographic_tags (
-    id BIGSERIAL PRIMARY KEY,
-    post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE,
-    dimension VARCHAR(50) NOT NULL,    -- age_group, gender, income_bracket, etc.
-    value VARCHAR(100) NOT NULL,       -- 25-34, female, middle_income, etc.
-    confidence FLOAT NOT NULL,         -- 0.0-1.0
-    method VARCHAR(30) NOT NULL,       -- self_disclosure, subreddit_prior, nlp_classifier
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    id                   BIGSERIAL PRIMARY KEY,
+    post_id              BIGINT   NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    demographic_value_id SMALLINT NOT NULL REFERENCES demographic_values(id),
+    confidence           FLOAT    NOT NULL,   -- 0.0-1.0
+    method               VARCHAR(30) NOT NULL, -- self_disclosure | subreddit_prior
+    created_at           TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (post_id, demographic_value_id, method)
 );
 
 -- Embeddings for similarity search
 CREATE TABLE post_embeddings (
-    id BIGSERIAL PRIMARY KEY,
-    post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE UNIQUE,
-    model VARCHAR(100) NOT NULL,       -- all-MiniLM-L6-v2, etc.
-    embedding vector(384) NOT NULL     -- dimension matches model output
+    id       BIGSERIAL PRIMARY KEY,
+    post_id  BIGINT   NOT NULL REFERENCES posts(id) ON DELETE CASCADE UNIQUE,
+    model_id SMALLINT NOT NULL REFERENCES embedding_models(id),
+    embedding vector(384) NOT NULL
 );
 
 -- Sector classification
 CREATE TABLE post_sectors (
-    id BIGSERIAL PRIMARY KEY,
-    post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE,
-    sector VARCHAR(50) NOT NULL,       -- tech, financial, political
-    confidence FLOAT NOT NULL,
+    id         BIGSERIAL PRIMARY KEY,
+    post_id    BIGINT   NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    sector_id  SMALLINT NOT NULL REFERENCES sectors(id),
+    confidence FLOAT    NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Indexes
-CREATE INDEX idx_posts_subreddit ON posts(subreddit);
-CREATE INDEX idx_posts_created ON posts(created_utc);
-CREATE INDEX idx_tags_post ON demographic_tags(post_id);
-CREATE INDEX idx_tags_dimension_value ON demographic_tags(dimension, value);
-CREATE INDEX idx_embeddings_post ON post_embeddings(post_id);
-CREATE INDEX idx_sectors_post ON post_sectors(post_id);
-
--- HNSW index for vector similarity (build after bulk insert for speed)
--- CREATE INDEX idx_embeddings_vector ON post_embeddings USING hnsw (embedding vector_cosine_ops);
 ```
 
-**Key decision**: HNSW index is commented out. Build it *after* bulk embedding insertion — building during inserts is 10x slower.
+**Key decision**: HNSW index is commented out in `init.sql`. Build it *after* bulk embedding insertion — building during inserts is 10x slower.
+
+### To recover dimension/value strings in queries
+
+```sql
+-- demographic_tags → human-readable
+JOIN demographic_values     dv ON dv.id  = dt.demographic_value_id
+JOIN demographic_dimensions dd ON dd.id  = dv.dimension_id
+-- dd.name = dimension, dv.value = value
+
+-- post_sectors → sector name
+JOIN sectors s ON s.id = ps.sector_id
+
+-- post_embeddings → model name
+JOIN embedding_models em ON em.id = pe.model_id
+```
 
 ## Connection Pattern (Python)
 
@@ -92,17 +114,14 @@ def get_conn():
 ## Bulk Insert Pattern
 
 ```python
-def insert_posts(conn, posts: list[dict]):
-    """posts: list of dicts with keys matching columns."""
-    cols = ["source_id", "subreddit", "author", "text", "score", "created_utc", "metadata"]
-    values = [[p[c] for c in cols] for p in posts]
-    with conn.cursor() as cur:
-        execute_values(
-            cur,
-            f"INSERT INTO posts ({','.join(cols)}) VALUES %s ON CONFLICT (source_id) DO NOTHING",
-            values,
-        )
-    conn.commit()
+# Posts — unchanged
+insert_posts(conn, posts)   # list of dicts with scraper fields
+
+# Tags — pass pre-loaded value_ids map to avoid a round-trip per batch
+from src.db import load_demographic_value_ids, insert_tags
+
+value_ids = load_demographic_value_ids(conn)   # call once at startup
+insert_tags(conn, tags, value_ids=value_ids)   # tags: [{post_id, dimension, value, confidence, method}]
 ```
 
 ## Pitfalls

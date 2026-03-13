@@ -3,12 +3,7 @@ Unit tests for src/tagger.py — no DB required.
 Run with: python3 -m pytest tests/test_tagger.py -v
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.tagger import tag_post
+from focus_groups.tagger import tag_post
 
 
 def _get(tags: list[dict], dimension: str) -> dict | None:

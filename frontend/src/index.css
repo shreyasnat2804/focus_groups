@@ -1,0 +1,1041 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: #1a1a1a;
+  background: #f8f9fa;
+}
+
+/* --- Nav --- */
+
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.nav-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #228be6;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+nav a {
+  color: #495057;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+nav a:hover {
+  color: #212529;
+}
+
+.nav-new-pitch {
+  padding: 0.4rem 0.8rem;
+  background: #228be6;
+  color: #fff !important;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.nav-new-pitch:hover {
+  background: #1c7ed6;
+  color: #fff !important;
+}
+
+/* --- Layout --- */
+
+main {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* --- Pitch List --- */
+
+.pitch-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+/* --- Search & Filter Bar --- */
+
+.search-filter-bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #228be6;
+  box-shadow: 0 0 0 2px rgba(34, 139, 230, 0.15);
+}
+
+.sector-filter {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+  cursor: pointer;
+}
+
+.deleted-toggle {
+  padding: 0.5rem 0.75rem;
+  background: #f1f3f5;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.deleted-toggle:hover {
+  background: #e9ecef;
+}
+
+.deleted-toggle.active {
+  background: #fff5f5;
+  color: #e03131;
+  border-color: #ffc9c9;
+}
+
+.btn-new-pitch {
+  padding: 0.5rem 1rem;
+  background: #228be6;
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-new-pitch:hover {
+  background: #1c7ed6;
+}
+
+.pitch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.pitch-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.pitch-card:hover {
+  border-color: #228be6;
+  box-shadow: 0 2px 8px rgba(34, 139, 230, 0.1);
+}
+
+.pitch-card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pitch-card-delete {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pitch-card-delete:hover {
+  background: #fff5f5;
+  color: #e03131;
+}
+
+.pitch-card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+}
+
+.pitch-card-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #868e96;
+  margin-bottom: 0.75rem;
+}
+
+.sector-tag {
+  background: #e7f5ff;
+  color: #1971c2;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.pitch-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #868e96;
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+/* --- Deleted card styling --- */
+
+.pitch-card.deleted {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.pitch-card.deleted:hover {
+  opacity: 0.85;
+}
+
+.days-remaining {
+  color: #e03131;
+  font-weight: 500;
+}
+
+.deleted-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-restore {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  background: #d3f9d8;
+  color: #2b8a3e;
+  border: 1px solid #b2f2bb;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-restore:hover {
+  background: #b2f2bb;
+}
+
+.btn-permanent-delete {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  background: #fff5f5;
+  color: #e03131;
+  border: 1px solid #ffc9c9;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-permanent-delete:hover {
+  background: #ffe3e3;
+}
+
+.status-badge {
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-completed {
+  background: #d3f9d8;
+  color: #2b8a3e;
+}
+
+.status-running {
+  background: #fff3bf;
+  color: #e67700;
+}
+
+.status-failed {
+  background: #ffe3e3;
+  color: #e03131;
+}
+
+/* --- Sentiment bars --- */
+
+.sentiment-bar-container {
+  margin-bottom: 0.75rem;
+}
+
+.sentiment-bar,
+.sentiment-bar-large {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #e9ecef;
+}
+
+.sentiment-bar-large {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.sentiment-segment {
+  transition: width 0.3s ease;
+}
+
+.sentiment-segment.positive {
+  background: #2b8a3e;
+}
+
+.sentiment-segment.mixed {
+  background: #e8590c;
+}
+
+.sentiment-segment.negative {
+  background: #e03131;
+}
+
+.sentiment-segment.neutral {
+  background: #adb5bd;
+}
+
+.sentiment-pct {
+  font-size: 0.75rem;
+  color: #868e96;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.sentiment-labels {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.sentiment-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sentiment-label::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.sentiment-label.positive::before {
+  background: #2b8a3e;
+}
+
+.sentiment-label.mixed::before {
+  background: #e8590c;
+}
+
+.sentiment-label.negative::before {
+  background: #e03131;
+}
+
+.sentiment-label.neutral::before {
+  background: #adb5bd;
+}
+
+/* --- Pitch Results --- */
+
+.session-name-heading {
+  cursor: text;
+  display: inline-block;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 -4px 0.5rem;
+  transition: background 0.15s;
+}
+
+.session-name-heading:hover {
+  background: #f1f3f5;
+}
+
+.session-name-input {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: inherit;
+  border: 2px solid #339af0;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin-bottom: 0.5rem;
+  outline: none;
+  background: #fff;
+  width: 100%;
+  max-width: 600px;
+  display: block;
+}
+
+.pitch-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-bottom: 1.25rem;
+}
+
+.pitch-description-box {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* --- Pitch Edit Section --- */
+
+.pitch-edit-section {
+  margin-bottom: 1.5rem;
+}
+
+.pitch-toggle {
+  background: #f1f3f5;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.pitch-toggle:hover {
+  background: #e9ecef;
+}
+
+.pitch-edit-body {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pitch-edit-body .pitch-textarea {
+  width: 100%;
+}
+
+.pitch-edit-body .target-audience {
+  max-width: 600px;
+}
+
+.rerun-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-cancel {
+  background: #f1f3f5;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.btn-cancel:hover {
+  background: #e9ecef;
+}
+
+.sentiment-overview {
+  margin-bottom: 1.5rem;
+}
+
+/* --- Response Cards --- */
+
+.response-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.response-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.sentiment-badge {
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.persona-summary {
+  font-size: 0.85rem;
+  color: #868e96;
+}
+
+.response-text {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+/* --- New Pitch Form --- */
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 600px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.helper-text {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #868e96;
+  margin-bottom: 0.25rem;
+}
+
+input,
+select,
+textarea {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.pitch-textarea {
+  min-height: 140px;
+}
+
+.target-audience {
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.target-audience legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.5rem;
+}
+
+.audience-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.audience-filters label {
+  flex: 1;
+  min-width: 140px;
+}
+
+.panel-size-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-size-row input {
+  width: 80px;
+}
+
+.panel-size-row span {
+  font-size: 0.85rem;
+  color: #868e96;
+}
+
+button {
+  padding: 0.6rem 1.2rem;
+  background: #228be6;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+button:hover {
+  background: #1c7ed6;
+}
+
+button:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+}
+
+/* --- Export Buttons --- */
+
+.export-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.export-buttons a {
+  padding: 0.4rem 0.8rem;
+  background: #f1f3f5;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  color: #495057;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.export-buttons a:hover {
+  background: #e9ecef;
+}
+
+/* --- Pagination --- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+
+/* --- Error & Loading --- */
+
+.error {
+  color: #e03131;
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.loading {
+  color: #868e96;
+  font-style: italic;
+}
+
+/* --- Pricing Analysis --- */
+
+.pricing-analysis-section {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pricing-analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.pricing-analysis-header h2 {
+  margin: 0;
+}
+
+.pricing-analysis-desc {
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-bottom: 1rem;
+}
+
+.pricing-config {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pricing-config label {
+  flex: 1;
+  min-width: 140px;
+}
+
+.pricing-run-btn {
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.pricing-results {
+  margin-top: 1rem;
+}
+
+.pricing-results-meta {
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-bottom: 1rem;
+}
+
+/* --- WTP Charts --- */
+
+.wtp-chart-container {
+  margin-bottom: 2rem;
+}
+
+.wtp-chart-container h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.wtp-chart-container h4 {
+  font-size: 0.95rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: #495057;
+}
+
+.wtp-price-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wtp-price-badge {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  min-width: 120px;
+}
+
+.wtp-price-badge.optimal {
+  background: #e7f5ff;
+  border: 1px solid #a5d8ff;
+}
+
+.wtp-price-badge.range {
+  background: #ebfbee;
+  border: 1px solid #b2f2bb;
+}
+
+.wtp-price-badge-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #868e96;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wtp-price-badge-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* --- WTP Tables --- */
+
+.wtp-demand-table,
+.wtp-segment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wtp-demand-table th,
+.wtp-segment-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+.wtp-demand-table td,
+.wtp-segment-table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.wtp-demand-table tr:hover,
+.wtp-segment-table tr:hover {
+  background: #f8f9fa;
+}
+
+.wtp-segment-summary {
+  margin-top: 1.5rem;
+}
+
+.wtp-segment-summary h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+/* --- Price Gauge --- */
+
+.recommended-price {
+  text-align: center;
+  margin: 0 auto 1.5rem;
+}
+
+.recommended-price-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #868e96;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.recommended-price-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.recommended-price-range {
+  font-size: 0.85rem;
+  color: #868e96;
+  margin-top: 0.25rem;
+}
+
+.recommended-price-breakdown {
+  font-size: 0.95rem;
+  color: #495057;
+  margin-top: 0.25rem;
+}
+
+/* --- Pricing Model Selector --- */
+
+.pricing-model-selector {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.pricing-model-btn {
+  padding: 0.45rem 1rem;
+  background: #f8f9fa;
+  color: #495057;
+  border: none;
+  border-right: 1px solid #dee2e6;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.pricing-model-btn:last-child {
+  border-right: none;
+}
+
+.pricing-model-btn:hover {
+  background: #e9ecef;
+}
+
+.pricing-model-btn.active {
+  background: #228be6;
+  color: #fff;
+}
+
+.pricing-model-btn.active:hover {
+  background: #1c7ed6;
+}
+
+/* --- Hybrid Preview --- */
+
+.hybrid-preview {
+  font-size: 0.8rem;
+  color: #868e96;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* --- Hybrid Callout --- */
+
+.hybrid-callout {
+  font-size: 0.85rem;
+  color: #1971c2;
+  background: #e7f5ff;
+  border: 1px solid #a5d8ff;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Error Boundary --- */
+
+.error-boundary {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.error-boundary h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.error-boundary button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.chart-error {
+  padding: 2rem;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
+
+/* --- About Page --- */
+
+.about-lead {
+  font-size: 1.05rem;
+  color: #495057;
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+}
+
+.about-section {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.about-section h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.about-section p {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.about-steps {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.about-list {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.about-cta {
+  text-align: center;
+}
