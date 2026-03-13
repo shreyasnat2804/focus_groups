@@ -18,6 +18,7 @@ describe("About", () => {
     expect(screen.getByText("The Problem")).toBeInTheDocument();
     expect(screen.getByText("How It Works")).toBeInTheDocument();
     expect(screen.getByText("What You Get")).toBeInTheDocument();
+    expect(screen.getByText("Coming Soon")).toBeInTheDocument();
     expect(screen.getByText("Get Started")).toBeInTheDocument();
   });
 
