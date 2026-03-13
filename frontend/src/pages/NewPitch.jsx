@@ -67,7 +67,8 @@ export default function NewPitch() {
           Describe your product
           <span className="helper-text">
             Write your pitch the way you'd present it to a real focus group.
-            What does it do? Who is it for? Why should someone care?
+            What does it do? Who is it for? Why should someone care? We
+            recommend at least 100 words for the best results.
           </span>
           <textarea
             value={description}
