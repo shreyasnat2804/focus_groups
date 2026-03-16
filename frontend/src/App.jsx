@@ -13,7 +13,7 @@ function AppNav() {
 
   return (
     <nav>
-      <Link to="/" className="nav-brand">FocusTest</Link>
+      <Link to="/dashboard" className="nav-brand">FocusTest</Link>
       <div className="nav-links">
         <Link to="/dashboard">Pitches</Link>
         <Link to="/about">About</Link>

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 const FEATURES = [
   {
@@ -41,6 +41,10 @@ const STATS = [
 ];
 
 export default function LandingPage() {
+  if (localStorage.getItem("focustest_onboarded") === "true") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="landing">
       {/* Floating nav */}

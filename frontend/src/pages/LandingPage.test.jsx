@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import LandingPage from "./LandingPage";
@@ -12,6 +12,10 @@ function renderLanding() {
 }
 
 describe("LandingPage", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("renders the hero headline with mixed fonts", () => {
     renderLanding();
     expect(screen.getByText(/customers/i)).toBeInTheDocument();
@@ -50,5 +54,17 @@ describe("LandingPage", () => {
     renderLanding();
     const accents = document.querySelectorAll(".accent-font");
     expect(accents.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("redirects onboarded users to /dashboard", () => {
+    localStorage.setItem("focustest_onboarded", "true");
+    renderLanding();
+    // Hero should not render since we redirect
+    expect(document.querySelector(".landing-hero")).not.toBeInTheDocument();
+  });
+
+  it("shows landing page for new users", () => {
+    renderLanding();
+    expect(document.querySelector(".landing-hero")).toBeInTheDocument();
   });
 });

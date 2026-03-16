@@ -7,7 +7,7 @@ export default function NewPitch() {
   const navigate = useNavigate();
   const [productName, setProductName] = useState("");
   const [description, setDescription] = useState("");
-  const [sector, setSector] = useState("");
+  const [sector, setSector] = useState(() => localStorage.getItem("focustest_preferred_sector") || "");
   const [numPersonas, setNumPersonas] = useState(5);
   const [ageGroup, setAgeGroup] = useState("");
   const [gender, setGender] = useState("");
