@@ -1,4 +1,4 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const FEATURES = [
   {
@@ -41,9 +41,7 @@ const STATS = [
 ];
 
 export default function LandingPage() {
-  if (localStorage.getItem("focustest_onboarded") === "true") {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const isOnboarded = localStorage.getItem("focustest_onboarded") === "true";
 
   return (
     <div className="landing">
@@ -51,8 +49,14 @@ export default function LandingPage() {
       <nav className="landing-nav">
         <span className="landing-nav-brand">FocusTest</span>
         <div className="landing-nav-links">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/onboarding" className="landing-nav-cta">Get Started</Link>
+          {isOnboarded ? (
+            <Link to="/dashboard" className="landing-nav-cta">Dashboard</Link>
+          ) : (
+            <>
+              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/onboarding" className="landing-nav-cta">Get Started</Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -75,9 +79,15 @@ export default function LandingPage() {
             insight in seconds — not weeks.
           </p>
           <div className="landing-hero-actions">
-            <Link to="/onboarding" className="landing-btn-primary">
-              Get Started
-            </Link>
+            {isOnboarded ? (
+              <Link to="/dashboard" className="landing-btn-primary">
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link to="/onboarding" className="landing-btn-primary">
+                Get Started
+              </Link>
+            )}
             <Link to="/about" className="landing-btn-secondary">
               Learn more
             </Link>
@@ -140,9 +150,15 @@ export default function LandingPage() {
             <span className="accent-font">next idea</span>?
           </h2>
           <p>Create your first focus group in under a minute.</p>
-          <Link to="/onboarding" className="landing-btn-primary">
-            Get Started
-          </Link>
+          {isOnboarded ? (
+            <Link to="/dashboard" className="landing-btn-primary">
+              Go to Dashboard
+            </Link>
+          ) : (
+            <Link to="/onboarding" className="landing-btn-primary">
+              Get Started
+            </Link>
+          )}
         </div>
       </section>
 
