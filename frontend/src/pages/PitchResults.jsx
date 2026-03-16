@@ -5,6 +5,7 @@ import ResponseCard from "../components/ResponseCard";
 import ExportButtons from "../components/ExportButtons";
 import PricingAnalysis from "../components/PricingAnalysis";
 import ErrorBoundary from "../components/ErrorBoundary";
+import SentimentBar from "../components/SentimentBar";
 import { SessionDetailSkeleton } from "../components/Skeleton";
 import {
   parseProductName,
@@ -280,38 +281,7 @@ export default function PitchResults() {
       {responses.length > 0 && (
         <div className="sentiment-overview">
           <h2>Sentiment Overview</h2>
-          <div className="sentiment-bar-large">
-            {sentiments.positive > 0 && (
-              <div
-                className="sentiment-segment positive"
-                style={{ width: `${(sentiments.positive / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.mixed > 0 && (
-              <div
-                className="sentiment-segment mixed"
-                style={{ width: `${(sentiments.mixed / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.negative > 0 && (
-              <div
-                className="sentiment-segment negative"
-                style={{ width: `${(sentiments.negative / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.neutral > 0 && (
-              <div
-                className="sentiment-segment neutral"
-                style={{ width: `${(sentiments.neutral / sentiments.total) * 100}%` }}
-              />
-            )}
-          </div>
-          <div className="sentiment-labels">
-            {sentiments.positive > 0 && <span className="sentiment-label positive">{sentiments.positive} positive</span>}
-            {sentiments.mixed > 0 && <span className="sentiment-label mixed">{sentiments.mixed} mixed</span>}
-            {sentiments.negative > 0 && <span className="sentiment-label negative">{sentiments.negative} negative</span>}
-            {sentiments.neutral > 0 && <span className="sentiment-label neutral">{sentiments.neutral} neutral</span>}
-          </div>
+          <SentimentBar sentiments={sentiments} size="large" showLabels />
         </div>
       )}
 
