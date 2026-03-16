@@ -35,6 +35,16 @@ export function sentimentDot(sentiment) {
   return sentimentColor(sentiment);
 }
 
+export function sentimentClass(sentiment) {
+  switch (sentiment) {
+    case "POSITIVE": return "positive";
+    case "NEGATIVE": return "negative";
+    case "MIXED": return "mixed";
+    case "NEUTRAL": return "neutral";
+    default: return "neutral";
+  }
+}
+
 /**
  * Parse product name from the question field.
  * Convention: "Product: Name\n\nDescription..."

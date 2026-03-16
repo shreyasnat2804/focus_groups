@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { getChartThemeColors } from "../utils/chartTheme";
 
 const SEGMENT_COLORS = [
   "#e74c3c",
@@ -19,15 +20,6 @@ const SEGMENT_COLORS = [
   "#8e44ad",
   "#1abc9c",
 ];
-
-function getThemeColors() {
-  const isLight = document.documentElement.dataset.theme === "light";
-  return {
-    grid: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)",
-    accent: isLight ? "#8a7e74" : "#818cf8",
-    accentFill: isLight ? "#8a7e74" : "#818cf8",
-  };
-}
 
 function formatPriceLabel(price, pricingModel, hybridTiers) {
   if (pricingModel === "hybrid" && hybridTiers) {
@@ -71,7 +63,7 @@ export default function DemandCurveChart({
     });
   }
 
-  const themeColors = getThemeColors();
+  const themeColors = getChartThemeColors();
 
   return (
     <div className="wtp-chart-container">

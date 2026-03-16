@@ -1,14 +1,4 @@
-import { parseSentiment } from "../utils/sentiment";
-
-function sentimentClass(sentiment) {
-  switch (sentiment) {
-    case "POSITIVE": return "positive";
-    case "NEGATIVE": return "negative";
-    case "MIXED": return "mixed";
-    case "NEUTRAL": return "neutral";
-    default: return "neutral";
-  }
-}
+import { parseSentiment, sentimentClass } from "../utils/sentiment";
 
 export default function ResponseCard({ response }) {
   const { sentiment, text } = parseSentiment(response.response_text);
