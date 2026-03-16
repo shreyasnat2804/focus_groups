@@ -11,6 +11,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+function getThemeColors() {
+  const isLight = document.documentElement.dataset.theme === "light";
+  return {
+    grid: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)",
+    refLine: isLight ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.5)",
+  };
+}
+
 export default function VanWestendorpChart({ curves, pricePoints }) {
   if (!curves || !curves.price_points || curves.price_points.length === 0) {
     return <p>No Van Westendorp data available.</p>;
@@ -56,7 +64,7 @@ export default function VanWestendorpChart({ curves, pricePoints }) {
       </div>
       <ResponsiveContainer width="100%" height={360}>
         <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+          <CartesianGrid strokeDasharray="3 3" stroke={getThemeColors().grid} />
           <XAxis
             dataKey="price"
             tickFormatter={(v) => `$${v}`}
@@ -84,7 +92,7 @@ export default function VanWestendorpChart({ curves, pricePoints }) {
           {optimal != null && (
             <ReferenceLine
               x={Math.round(optimal)}
-              stroke="rgba(255,255,255,0.5)"
+              stroke={getThemeColors().refLine}
               strokeDasharray="5 3"
               strokeWidth={1.5}
             />
