@@ -6,7 +6,6 @@
   /* Color palette */
   --color-bg: #f5f5f0;
   --color-surface: #ffffff;
-  --color-surface-raised: #ffffff;
   --color-surface-sunken: #eeeee8;
   --color-border: #e0dfda;
   --color-border-light: #eae9e4;
@@ -19,7 +18,6 @@
 
   /* Brand */
   --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
   --color-primary-light: #eff6ff;
   --color-primary-border: #bfdbfe;
 
@@ -144,19 +142,20 @@ nav a:hover {
   background: var(--color-surface-sunken);
 }
 
-.nav-new-pitch {
-  padding: var(--space-2) var(--space-4) !important;
-  background: var(--color-text) !important;
-  color: var(--color-text-inverse) !important;
-  border-radius: var(--radius-md) !important;
-  font-size: 0.85rem !important;
-  font-weight: 600 !important;
+nav a.nav-new-pitch {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
   margin-left: var(--space-2);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast) !important;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
-.nav-new-pitch:hover {
-  background: #333 !important;
+nav a.nav-new-pitch:hover {
+  background: #333;
+  color: var(--color-text-inverse);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
@@ -641,15 +640,17 @@ h3 {
   align-items: center;
 }
 
-.btn-cancel {
-  background: var(--color-surface) !important;
-  color: var(--color-text-secondary) !important;
-  border: 1px solid var(--color-border) !important;
+.rerun-actions .btn-cancel {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
-.btn-cancel:hover {
-  background: var(--color-surface-sunken) !important;
-  color: var(--color-text) !important;
+.rerun-actions .btn-cancel:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  transform: none;
+  box-shadow: none;
 }
 
 .sentiment-overview {
