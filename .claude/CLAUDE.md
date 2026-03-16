@@ -44,7 +44,7 @@ Reddit (PRAW) → Postgres (raw posts)
 - **Testing**: Vitest + Testing Library. Tests colocated with components (`__tests__/` dirs or `.test.jsx` siblings)
 - **Key patterns**: `localStorage` keys prefixed with `focustest_` (e.g. `focustest_onboarded`, `focustest_preferred_sector`). Constants in `src/constants.js`. API layer in `src/api.js` with `VITE_API_URL` env var
 - **Nav**: `AppNav` component in `App.jsx` is hidden on `/` and `/onboarding` (via shared `CHROMELESS_ROUTES` constant). `AppBlobs` decorative background uses the same constant. Landing page has its own nav
-- **Theme**: Dark glassmorphism — dark bg `#0a0a0f`, glass cards with `backdrop-filter: blur(24px)`, indigo accent `#6366f1`, light text. Design tokens in `:root` cascade to all `var()` references. When adding new glass-styled elements, use `var(--color-surface)` / `var(--color-border)` / `var(--glass-blur)` tokens — never hardcode `rgba(255,255,255,...)` values
+- **Theme**: Dual theme — dark glassmorphism (default) and light warm taupe mode. Toggle via `useTheme` hook (`src/hooks/useTheme.js`), persists to `focustest_theme` localStorage key. Light mode uses `[data-theme="light"]` CSS overrides. `ThemeToggle` component in `src/components/ThemeToggle.jsx`. Chart theme colors in `src/utils/chartTheme.js`. Design tokens in `:root` cascade to all `var()` references. When adding new glass-styled elements, use `var(--color-surface)` / `var(--color-border)` / `var(--glass-blur)` tokens — never hardcode `rgba(255,255,255,...)` values
 
 ## Deployment
 
@@ -63,6 +63,7 @@ Reddit (PRAW) → Postgres (raw posts)
 | 2026-02-17 | Lambda GPU over Colab for training | Persistent SSH, no session timeouts, better for LoRA jobs |
 | 2026-03-15 | Route `/` is landing page, `/dashboard` is app | Separate marketing surface from authenticated app experience |
 | 2026-03-15 | Dark glassmorphism theme for entire app | Align all pages with the modern landing/onboarding design language |
+| 2026-03-16 | Light mode with warm taupe palette + toggle | User requested warm minimal aesthetic alternative to dark theme |
 | 2026-03-15 | No `backdrop-filter` on `.response-card` | Results pages can render many cards; stacked blur is GPU-intensive with negligible visual benefit |
 
 ## Git Workflow
