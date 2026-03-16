@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { listSessions, deleteSession, restoreSession, permanentlyDeleteSession } from "../api";
 import { parseSentiment, parseProductName, sentimentColor, aggregateSentiments } from "../utils/sentiment";
+import { PitchGridSkeleton } from "../components/Skeleton";
+import EmptyState from "../components/EmptyState";
 
 const PAGE_SIZE = 10;
 const SECTORS = ["tech", "financial", "political"];
@@ -134,9 +136,26 @@ export default function PitchList() {
       {error && <div className="error">{error}</div>}
 
       {loading ? (
-        <p className="loading">Loading...</p>
+        <PitchGridSkeleton count={6} />
       ) : sessions.length === 0 ? (
-        <p>{showDeleted ? "No deleted pitches." : offset === 0 ? <>No pitches yet. <Link to="/new">Create your first pitch.</Link></> : "No results."}</p>
+        showDeleted ? (
+          <EmptyState
+            title="No deleted pitches"
+            description="Pitches you delete will appear here for 30 days before being permanently removed."
+          />
+        ) : offset === 0 && !debouncedSearch && !sector ? (
+          <EmptyState
+            title="No pitches yet"
+            description="Create your first pitch to get instant feedback from a diverse AI focus group."
+            actionLabel="+ New Pitch"
+            actionTo="/new"
+          />
+        ) : (
+          <EmptyState
+            title="No results"
+            description="Try adjusting your search or filters."
+          />
+        )
       ) : (
         <>
           <div className="pitch-grid">

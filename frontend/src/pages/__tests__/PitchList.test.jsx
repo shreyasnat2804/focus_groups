@@ -40,10 +40,10 @@ describe("PitchList", () => {
     vi.clearAllMocks();
   });
 
-  it("shows loading state initially", () => {
+  it("shows loading skeleton initially", () => {
     listSessions.mockReturnValue(new Promise(() => {})); // never resolves
-    renderWithRouter();
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    const { container } = renderWithRouter();
+    expect(container.querySelector(".skeleton-card")).toBeInTheDocument();
   });
 
   it("renders session cards when data loads", async () => {
