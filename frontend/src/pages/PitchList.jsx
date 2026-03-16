@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { listSessions, deleteSession, restoreSession, permanentlyDeleteSession } from "../api";
-import { parseSentiment, parseProductName, sentimentColor, aggregateSentiments } from "../utils/sentiment";
+import { parseProductName, aggregateSentiments } from "../utils/sentiment";
+import SentimentBar from "../components/SentimentBar";
+import { PitchGridSkeleton } from "../components/Skeleton";
+import EmptyState from "../components/EmptyState";
 
 const PAGE_SIZE = 10;
 const SECTORS = ["tech", "financial", "political"];
@@ -134,9 +137,26 @@ export default function PitchList() {
       {error && <div className="error">{error}</div>}
 
       {loading ? (
-        <p className="loading">Loading...</p>
+        <PitchGridSkeleton count={6} />
       ) : sessions.length === 0 ? (
-        <p>{showDeleted ? "No deleted pitches." : offset === 0 ? <>No pitches yet. <Link to="/new">Create your first pitch.</Link></> : "No results."}</p>
+        showDeleted ? (
+          <EmptyState
+            title="No deleted pitches"
+            description="Pitches you delete will appear here for 30 days before being permanently removed."
+          />
+        ) : offset === 0 && !debouncedSearch && !sector ? (
+          <EmptyState
+            title="No pitches yet"
+            description="Create your first pitch to get instant feedback from a diverse AI focus group."
+            actionLabel="+ New Pitch"
+            actionTo="/new"
+          />
+        ) : (
+          <EmptyState
+            title="No results"
+            description="Try adjusting your search or filters."
+          />
+        )
       ) : (
         <>
           <div className="pitch-grid">
@@ -173,9 +193,6 @@ function PitchCard({ session, isDeleted, onDelete, onRestore, onPermanentDelete 
   const responses = session.responses || [];
   const hasSentiment = responses.length > 0;
   const sentiments = hasSentiment ? aggregateSentiments(responses) : null;
-  const positivePercent = sentiments && sentiments.total > 0
-    ? Math.round((sentiments.positive / sentiments.total) * 100)
-    : 0;
 
   const daysRemaining = isDeleted && session.deleted_at
     ? Math.max(0, 30 - Math.floor((Date.now() - new Date(session.deleted_at).getTime()) / (1000 * 60 * 60 * 24)))
@@ -201,35 +218,7 @@ function PitchCard({ session, isDeleted, onDelete, onRestore, onPermanentDelete 
         <span>{session.num_personas} {session.num_personas === 1 ? "person" : "people"}</span>
       </div>
       {hasSentiment && (
-        <div className="sentiment-bar-container">
-          <div className="sentiment-bar">
-            {sentiments.positive > 0 && (
-              <div
-                className="sentiment-segment positive"
-                style={{ width: `${(sentiments.positive / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.mixed > 0 && (
-              <div
-                className="sentiment-segment mixed"
-                style={{ width: `${(sentiments.mixed / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.negative > 0 && (
-              <div
-                className="sentiment-segment negative"
-                style={{ width: `${(sentiments.negative / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.neutral > 0 && (
-              <div
-                className="sentiment-segment neutral"
-                style={{ width: `${(sentiments.neutral / sentiments.total) * 100}%` }}
-              />
-            )}
-          </div>
-          <span className="sentiment-pct">{positivePercent}% positive</span>
-        </div>
+        <SentimentBar sentiments={sentiments} showPercent />
       )}
       <div className="pitch-card-footer">
         <span className={`status-badge status-${session.status}`}>{session.status}</span>

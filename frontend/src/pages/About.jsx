@@ -18,7 +18,7 @@ export default function About() {
           then, you're limited to a handful of perspectives from one geographic
           area.
         </p>
-        <p style={{ marginTop: "0.5rem" }}>
+        <p>
           For most product teams, that means skipping consumer research entirely
           or relying on gut instinct. FocusTest changes that.
         </p>
@@ -88,7 +88,7 @@ export default function About() {
           Ready to test your next idea? Create your first pitch and get feedback
           in under a minute.
         </p>
-        <Link to="/new" className="btn-new-pitch" style={{ marginTop: "0.75rem", display: "inline-block" }}>
+        <Link to="/new" className="btn-new-pitch about-cta-btn">
           + New Pitch
         </Link>
       </section>

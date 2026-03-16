@@ -5,15 +5,14 @@ import ResponseCard from "../components/ResponseCard";
 import ExportButtons from "../components/ExportButtons";
 import PricingAnalysis from "../components/PricingAnalysis";
 import ErrorBoundary from "../components/ErrorBoundary";
+import SentimentBar from "../components/SentimentBar";
+import { SessionDetailSkeleton } from "../components/Skeleton";
 import {
   parseProductName,
   parseProductDescription,
   aggregateSentiments,
 } from "../utils/sentiment";
-
-const SECTORS = ["", "tech", "financial", "political"];
-const AGE_GROUPS = ["", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
-const GENDERS = ["", "male", "female", "non-binary"];
+import { SECTORS, AGE_GROUPS, GENDERS } from "../constants";
 
 export default function PitchResults() {
   const { id } = useParams();
@@ -58,7 +57,7 @@ export default function PitchResults() {
   }, [id]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!session) return <p className="loading">Loading session...</p>;
+  if (!session) return <SessionDetailSkeleton />;
 
   const productName = parseProductName(session.question);
   const displayName = nameValue || productName;
@@ -204,24 +203,27 @@ export default function PitchResults() {
                 <label>
                   Sector
                   <select value={sector} onChange={(e) => setSector(e.target.value)}>
+                    <option value="">All sectors</option>
                     {SECTORS.map((s) => (
-                      <option key={s} value={s}>{s || "All sectors"}</option>
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </label>
                 <label>
                   Age group
                   <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)}>
+                    <option value="">Any</option>
                     {AGE_GROUPS.map((a) => (
-                      <option key={a} value={a}>{a || "Any"}</option>
+                      <option key={a} value={a}>{a}</option>
                     ))}
                   </select>
                 </label>
                 <label>
                   Gender
                   <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                    <option value="">Any</option>
                     {GENDERS.map((g) => (
-                      <option key={g} value={g}>{g || "Any"}</option>
+                      <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
                 </label>
@@ -279,38 +281,7 @@ export default function PitchResults() {
       {responses.length > 0 && (
         <div className="sentiment-overview">
           <h2>Sentiment Overview</h2>
-          <div className="sentiment-bar-large">
-            {sentiments.positive > 0 && (
-              <div
-                className="sentiment-segment positive"
-                style={{ width: `${(sentiments.positive / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.mixed > 0 && (
-              <div
-                className="sentiment-segment mixed"
-                style={{ width: `${(sentiments.mixed / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.negative > 0 && (
-              <div
-                className="sentiment-segment negative"
-                style={{ width: `${(sentiments.negative / sentiments.total) * 100}%` }}
-              />
-            )}
-            {sentiments.neutral > 0 && (
-              <div
-                className="sentiment-segment neutral"
-                style={{ width: `${(sentiments.neutral / sentiments.total) * 100}%` }}
-              />
-            )}
-          </div>
-          <div className="sentiment-labels">
-            {sentiments.positive > 0 && <span className="sentiment-label positive">{sentiments.positive} positive</span>}
-            {sentiments.mixed > 0 && <span className="sentiment-label mixed">{sentiments.mixed} mixed</span>}
-            {sentiments.negative > 0 && <span className="sentiment-label negative">{sentiments.negative} negative</span>}
-            {sentiments.neutral > 0 && <span className="sentiment-label neutral">{sentiments.neutral} neutral</span>}
-          </div>
+          <SentimentBar sentiments={sentiments} size="large" showLabels />
         </div>
       )}
 
