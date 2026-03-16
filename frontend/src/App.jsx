@@ -6,10 +6,11 @@ import About from "./pages/About";
 import LandingPage from "./pages/LandingPage";
 import Onboarding from "./pages/Onboarding";
 
+const CHROMELESS_ROUTES = ["/", "/onboarding"];
+
 function AppNav() {
   const location = useLocation();
-  const hideNav = location.pathname === "/" || location.pathname === "/onboarding";
-  if (hideNav) return null;
+  if (CHROMELESS_ROUTES.includes(location.pathname)) return null;
 
   return (
     <nav>
@@ -23,9 +24,23 @@ function AppNav() {
   );
 }
 
+function AppBlobs() {
+  const location = useLocation();
+  if (CHROMELESS_ROUTES.includes(location.pathname)) return null;
+
+  return (
+    <div className="app-blobs" aria-hidden="true">
+      <div className="app-blob app-blob-1" />
+      <div className="app-blob app-blob-2" />
+      <div className="app-blob app-blob-3" />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <AppBlobs />
       <AppNav />
       <Routes>
         <Route path="/" element={<LandingPage />} />
