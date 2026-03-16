@@ -6,6 +6,7 @@ import ExportButtons from "../components/ExportButtons";
 import PricingAnalysis from "../components/PricingAnalysis";
 import ErrorBoundary from "../components/ErrorBoundary";
 import SentimentBar from "../components/SentimentBar";
+import { SessionDetailSkeleton } from "../components/Skeleton";
 import {
   parseProductName,
   parseProductDescription,
@@ -56,7 +57,7 @@ export default function PitchResults() {
   }, [id]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!session) return <p className="loading">Loading session...</p>;
+  if (!session) return <SessionDetailSkeleton />;
 
   const productName = parseProductName(session.question);
   const displayName = nameValue || productName;
