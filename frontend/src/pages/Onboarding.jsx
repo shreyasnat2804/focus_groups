@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SECTORS } from "../constants";
+import { useTheme } from "../hooks/useTheme";
 
 const STEPS = [
   {
@@ -18,15 +19,16 @@ const STEPS = [
 ];
 
 const SECTOR_DETAILS = {
-  tech: { emoji: "💻", desc: "Software, hardware, apps, SaaS" },
-  financial: { emoji: "📊", desc: "Fintech, banking, insurance, investing" },
-  political: { emoji: "🏛️", desc: "Policy, campaigns, civic tech" },
+  tech: { emoji: "\u{1F4BB}", desc: "Software, hardware, apps, SaaS" },
+  financial: { emoji: "\u{1F4CA}", desc: "Fintech, banking, insurance, investing" },
+  political: { emoji: "\u{1F3DB}\uFE0F", desc: "Policy, campaigns, civic tech" },
 };
 
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [selectedSector, setSelectedSector] = useState("");
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   function handleFinish() {
     localStorage.setItem("focustest_onboarded", "true");
@@ -45,14 +47,40 @@ export default function Onboarding() {
       <div className="onboarding-blob onboarding-blob-2" />
 
       <div className="onboarding-card">
-        {/* Progress dots */}
-        <div className="onboarding-progress">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`onboarding-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}
-            />
-          ))}
+        {/* Theme toggle + Progress dots */}
+        <div className="onboarding-header">
+          <div className="onboarding-progress">
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                className={`onboarding-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            className="theme-toggle onboarding-theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* Step content */}
