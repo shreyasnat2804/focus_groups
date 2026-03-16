@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SECTORS } from "../constants";
+import ThemeToggle from "../components/ThemeToggle";
+import { useTheme } from "../hooks/useTheme";
 
 const STEPS = [
   {
@@ -18,15 +20,16 @@ const STEPS = [
 ];
 
 const SECTOR_DETAILS = {
-  tech: { emoji: "💻", desc: "Software, hardware, apps, SaaS" },
-  financial: { emoji: "📊", desc: "Fintech, banking, insurance, investing" },
-  political: { emoji: "🏛️", desc: "Policy, campaigns, civic tech" },
+  tech: { emoji: "\u{1F4BB}", desc: "Software, hardware, apps, SaaS" },
+  financial: { emoji: "\u{1F4CA}", desc: "Fintech, banking, insurance, investing" },
+  political: { emoji: "\u{1F3DB}\uFE0F", desc: "Policy, campaigns, civic tech" },
 };
 
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [selectedSector, setSelectedSector] = useState("");
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   function handleFinish() {
     localStorage.setItem("focustest_onboarded", "true");
@@ -45,14 +48,17 @@ export default function Onboarding() {
       <div className="onboarding-blob onboarding-blob-2" />
 
       <div className="onboarding-card">
-        {/* Progress dots */}
-        <div className="onboarding-progress">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`onboarding-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}
-            />
-          ))}
+        {/* Theme toggle + Progress dots */}
+        <div className="onboarding-header">
+          <div className="onboarding-progress">
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                className={`onboarding-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}
+              />
+            ))}
+          </div>
+          <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="theme-toggle onboarding-theme-toggle" iconSize={16} />
         </div>
 
         {/* Step content */}

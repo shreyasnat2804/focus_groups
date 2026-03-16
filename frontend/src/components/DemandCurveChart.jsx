@@ -10,10 +10,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { getChartThemeColors } from "../utils/chartTheme";
 
 const SEGMENT_COLORS = [
   "#e74c3c",
-  "#3498db",
+  "#c4a18a",
   "#27ae60",
   "#f39c12",
   "#8e44ad",
@@ -62,6 +63,8 @@ export default function DemandCurveChart({
     });
   }
 
+  const themeColors = getChartThemeColors();
+
   return (
     <div className="wtp-chart-container">
       <h3>Gabor-Granger Demand Curve</h3>
@@ -69,7 +72,7 @@ export default function DemandCurveChart({
       {/* Overall demand */}
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={overallData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+          <CartesianGrid strokeDasharray="3 3" stroke={themeColors.grid} />
           <XAxis
             dataKey="label"
             fontSize={12}
@@ -85,8 +88,8 @@ export default function DemandCurveChart({
           <Area
             type="monotone"
             dataKey="Would Buy"
-            stroke="#818cf8"
-            fill="#818cf8"
+            stroke={themeColors.accent}
+            fill={themeColors.accentFill}
             fillOpacity={0.12}
             strokeWidth={2}
           />
@@ -117,7 +120,7 @@ export default function DemandCurveChart({
           <h4>Demand by {segmentDimension?.replaceAll("_", " ") || "segment"}</h4>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={segmentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke={themeColors.grid} />
               <XAxis
                 dataKey="price"
                 tickFormatter={(v) => `$${v}`}

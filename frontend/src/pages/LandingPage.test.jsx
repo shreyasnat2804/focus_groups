@@ -56,11 +56,12 @@ describe("LandingPage", () => {
     expect(accents.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("redirects onboarded users to /dashboard", () => {
+  it("shows dashboard CTA for onboarded users instead of get started", () => {
     localStorage.setItem("focustest_onboarded", "true");
     renderLanding();
-    // Hero should not render since we redirect
-    expect(document.querySelector(".landing-hero")).not.toBeInTheDocument();
+    expect(document.querySelector(".landing-hero")).toBeInTheDocument();
+    expect(screen.getAllByText("Go to Dashboard").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Get Started")).not.toBeInTheDocument();
   });
 
   it("shows landing page for new users", () => {

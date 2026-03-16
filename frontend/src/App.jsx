@@ -5,10 +5,12 @@ import PitchList from "./pages/PitchList";
 import About from "./pages/About";
 import LandingPage from "./pages/LandingPage";
 import Onboarding from "./pages/Onboarding";
+import ThemeToggle from "./components/ThemeToggle";
+import { useTheme } from "./hooks/useTheme";
 
 const CHROMELESS_ROUTES = ["/", "/onboarding"];
 
-function AppNav() {
+function AppNav({ theme, toggleTheme }) {
   const location = useLocation();
   if (CHROMELESS_ROUTES.includes(location.pathname)) return null;
 
@@ -18,6 +20,7 @@ function AppNav() {
       <div className="nav-links">
         <Link to="/dashboard">Pitches</Link>
         <Link to="/about">About</Link>
+        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
         <Link to="/new" className="nav-new-pitch">+ New Pitch</Link>
       </div>
     </nav>
@@ -38,10 +41,12 @@ function AppBlobs() {
 }
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <BrowserRouter>
       <AppBlobs />
-      <AppNav />
+      <AppNav theme={theme} toggleTheme={toggleTheme} />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/onboarding" element={<Onboarding />} />

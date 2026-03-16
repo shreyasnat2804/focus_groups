@@ -1,4 +1,4 @@
-import { parseSentiment, sentimentColor } from "../utils/sentiment";
+import { parseSentiment, sentimentClass } from "../utils/sentiment";
 
 export default function ResponseCard({ response }) {
   const { sentiment, text } = parseSentiment(response.response_text);
@@ -6,7 +6,7 @@ export default function ResponseCard({ response }) {
   return (
     <div className="response-card">
       <div className="response-card-header">
-        <span className="sentiment-badge" style={{ backgroundColor: sentimentColor(sentiment) }}>
+        <span className={`sentiment-badge ${sentimentClass(sentiment)}`}>
           {sentiment || "UNKNOWN"}
         </span>
         <span className="persona-summary">{response.persona_summary}</span>
