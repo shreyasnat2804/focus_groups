@@ -69,7 +69,7 @@ export default function DemandCurveChart({
       {/* Overall demand */}
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={overallData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
           <XAxis
             dataKey="label"
             fontSize={12}
@@ -85,8 +85,8 @@ export default function DemandCurveChart({
           <Area
             type="monotone"
             dataKey="Would Buy"
-            stroke="#2980b9"
-            fill="#2980b9"
+            stroke="#818cf8"
+            fill="#818cf8"
             fillOpacity={0.12}
             strokeWidth={2}
           />
@@ -117,7 +117,7 @@ export default function DemandCurveChart({
           <h4>Demand by {segmentDimension?.replaceAll("_", " ") || "segment"}</h4>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={segmentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis
                 dataKey="price"
                 tickFormatter={(v) => `$${v}`}
