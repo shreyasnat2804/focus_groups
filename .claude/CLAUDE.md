@@ -78,7 +78,7 @@ Reddit (PRAW) → Postgres (raw posts)
 
 - Before every coding task, describe and implement robust testers for what you expect the code to do, and only after that, can you write the code itself.
 - **Backend**: Tests in `tests/` directory, named `test_<module>.py`. Run with `python3 -m pytest tests/`
-- **Frontend**: Tests colocated with source. Run with `npx vitest run` from `frontend/`. Currently 92 tests across 10 files
+- **Frontend**: Tests colocated with source. Run with `npx vitest run` from `frontend/`. Currently 99 tests across 11 files. `window.matchMedia` is mocked globally in `test-setup.js` for hooks that use it (e.g. `useTheme`)
 
 ## Shell & Permissions
 
