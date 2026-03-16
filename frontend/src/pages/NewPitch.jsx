@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createSession } from "../api";
-
-const SECTORS = ["", "tech", "financial", "political"];
-const AGE_GROUPS = ["", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
-const GENDERS = ["", "male", "female", "non-binary"];
+import { SECTORS, AGE_GROUPS, GENDERS } from "../constants";
 
 export default function NewPitch() {
   const navigate = useNavigate();
@@ -85,10 +82,9 @@ export default function NewPitch() {
             <label>
               Sector
               <select value={sector} onChange={(e) => setSector(e.target.value)}>
+                <option value="">All sectors</option>
                 {SECTORS.map((s) => (
-                  <option key={s} value={s}>
-                    {s || "All sectors"}
-                  </option>
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </label>
@@ -96,10 +92,9 @@ export default function NewPitch() {
             <label>
               Age group
               <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)}>
+                <option value="">Any</option>
                 {AGE_GROUPS.map((a) => (
-                  <option key={a} value={a}>
-                    {a || "Any"}
-                  </option>
+                  <option key={a} value={a}>{a}</option>
                 ))}
               </select>
             </label>
@@ -107,10 +102,9 @@ export default function NewPitch() {
             <label>
               Gender
               <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                <option value="">Any</option>
                 {GENDERS.map((g) => (
-                  <option key={g} value={g}>
-                    {g || "Any"}
-                  </option>
+                  <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </label>
